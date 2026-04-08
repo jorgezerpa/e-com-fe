@@ -1,4 +1,6 @@
 'use client'
+import { SectionFilters } from '@/components/SectionFilters';
+import { SectionHeader } from '@/components/SectionHeader';
 import React, { useState, useMemo } from 'react';
 
 // --- Types (Based on Prisma Schema) ---
@@ -220,7 +222,7 @@ export default function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
 
   // Filters
-  const [filterState, setFilterState] = useState<string>('ALL');
+  const [filterState, setFilterState] = useState<string>('');
   const [dateStart, setDateStart] = useState<string>('');
   const [dateEnd, setDateEnd] = useState<string>('');
   
@@ -236,7 +238,7 @@ export default function OrderManagement() {
   // Derived Data
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
-      const matchState = filterState === 'ALL' || order.state === filterState;
+      const matchState = filterState === '' || order.state === filterState;
       const orderDate = new Date(order.createdAt).getTime();
       const matchStart = dateStart ? orderDate >= new Date(dateStart).getTime() : true;
       const matchEnd = dateEnd ? orderDate <= new Date(dateEnd).getTime() + 86400000 : true; // +1 day to include end of day
@@ -269,53 +271,20 @@ export default function OrderManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-8 font-sans transition-colors duration-200">
       <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* Header & Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Orders Management</h1>
-          <button
-            onClick={() => setIsExportModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-medium transition-colors shadow-sm"
-          >
-            <ExportIcon />
-            Export Data
-          </button>
-        </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Filter by State</label>
-            <select
-              value={filterState}
-              onChange={(e) => { setFilterState(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="ALL">All States</option>
-              {Object.values(OrderState).map(state => (
-                <option key={state} value={state}>{state}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Start Date</label>
-            <input
-              type="date"
-              value={dateStart}
-              onChange={(e) => { setDateStart(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">End Date</label>
-            <input
-              type="date"
-              value={dateEnd}
-              onChange={(e) => { setDateEnd(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </div>
-        </div>
+        <SectionHeader title='Ordenes' description='Organiza tus ordenes' buttonLabel='exportar ordenes' buttonAction={() => setIsExportModalOpen(true)} />
+        <SectionFilters 
+          searchBars={[]}
+          dropdownAllSelectedLabel='Todos'
+          dropdowns={[
+            { title:"Filtrar por estados", items: Object.values(OrderState).map(state => ({ label:state, value:state })), value: filterState, handleChangeValue: (e) => { setFilterState(e.target.value); setCurrentPage(1); } }
+          ]}
+          datePickers={[
+            { date: dateStart, handleChangeDate: (e) => { setDateStart(e.target.value); setCurrentPage(1); }, title: "Desde" },
+            { date: dateEnd, handleChangeDate: (e) => { setDateEnd(e.target.value); setCurrentPage(1); }, title: "Hasta" },
+          ]}
+        />
+      
 
         {/* Table Area */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">

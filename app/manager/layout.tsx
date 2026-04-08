@@ -1,10 +1,7 @@
 'use client'
-import React, { useEffect } from 'react';
+import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Sidebar } from '@/components/shared/manager/Sidebar';
-import { logoutUser } from '@/apiHandlers/auth';
-import jwt from 'jsonwebtoken';
-import { navItemsManager } from '@/components/shared/manager/Sidebar';
+import { Sidebar } from '@/components/Sidebar';
 
 export default function AdminLayout({
   children,

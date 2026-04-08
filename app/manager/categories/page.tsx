@@ -1,4 +1,6 @@
 'use client'
+import { SectionFilters } from '@/components/SectionFilters';
+import { SectionHeader } from '@/components/SectionHeader';
 import React, { useState, useMemo } from 'react';
 
 // --- Types ---
@@ -82,34 +84,16 @@ export default function CategoryManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-8 font-sans transition-colors duration-200">
       <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Product Categories</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Organize your store catalog</p>
-          </div>
-          <button
-            onClick={handleOpenCreate}
-            className="w-full sm:w-auto flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all shadow-sm hover:shadow-md"
-          >
-            <PlusIcon /> New Category
-          </button>
-        </div>
 
-        {/* Search Bar */}
-        <div className="relative max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-            <SearchIcon />
-          </div>
-          <input
-            type="text"
-            placeholder="Filter categories by name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm shadow-sm"
-          />
-        </div>
+        <SectionHeader title='Categorias' description='Organiza tus categorias' buttonLabel='Crear Categoria' buttonAction={handleOpenCreate} />
+        <SectionFilters 
+          searchBars={[
+            { title:"Buscar", placeholder:"nombre", value: searchQuery, handleChangeValue: (e) => setSearchQuery(e.target.value)  },
+          ]}
+          dropdownAllSelectedLabel='Todas'
+          dropdowns={[]}
+          datePickers={[]}
+        />        
 
         {/* Categories Grid/Table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">

@@ -1,4 +1,5 @@
 'use client'
+import { SectionHeader } from '@/components/SectionHeader';
 import React, { useState, useMemo } from 'react';
 
 // --- Types ---
@@ -35,15 +36,8 @@ export default function PaymentManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div>
-            <h1 className="text-2xl font-bold dark:text-white">Payment Methods</h1>
-            <p className="text-sm text-gray-500">Configure how customers pay your company</p>
-          </div>
-          <button onClick={() => setIsModalOpen(true)} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">
-            <PlusIcon /> Add Method
-          </button>
-        </div>
+    
+        <SectionHeader title='Metodos de Pago' description='Organiza tus metodos de pago' buttonLabel='Crear Metodo' buttonAction={() => setIsModalOpen(true)} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {methods.map((method) => (

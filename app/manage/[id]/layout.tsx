@@ -15,11 +15,6 @@ export default function AdminLayout({
   // e.g., /admin/team-heatmap -> 'team-heatmap'
   const activeItem = pathname.split('/').pop() || 'long-term-data-visualization';
 
-  const handleNavigation = (id: string) => {
-    // This assumes your folder structure matches the IDs
-    // e.g., app/admin/agents-management/page.tsx
-    router.push(`/manager/${id}`);
-  };
 
   // useEffect(() => {
   //   const token = localStorage.getItem('jwt');
@@ -53,7 +48,6 @@ export default function AdminLayout({
       <aside className="hidden md:flex md:w-72 lg:w-80 flex-col flex-shrink-0">
         <Sidebar 
           activeItem={activeItem} 
-          onNavigate={handleNavigation} 
         />
       </aside>
 

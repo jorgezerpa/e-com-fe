@@ -1,19 +1,26 @@
+import { CreateProduct, UpdateProduct } from "@/apiHandlers/products";
 import { CloseIcon, ExternalLinkIcon, GripIcon, TrashIcon } from "@/icons";
 import { Product, ProductImage } from "@/types";
+import { useParams } from "next/navigation";
 import { DragEvent, useState } from "react";
 
 // --- Product Modal Component ---
 export function ProductModal({
   product,
   onClose,
-  onSave,
+  onCreate,
+  onUpdate,
   error,
 }: {
   product: Product | null;
   onClose: () => void;
-  onSave: (data: Partial<Product>) => void;
+  onCreate: (data: CreateProduct) => void;
+  onUpdate: (id:string|number, data: UpdateProduct) => void;
   error: string | null;
 }) {
+  const params = useParams();
+  const companyId = params.id;
+
   const isEditing = !!product;
 
   const [formData, setFormData] = useState({
@@ -60,7 +67,8 @@ export function ProductModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...formData, images });
+    if(isEditing) onUpdate(product.id, formData)
+    if(!isEditing) onCreate({...formData, companyId: companyId as unknown as number, categoryIds:[] })
   };
 
   return (

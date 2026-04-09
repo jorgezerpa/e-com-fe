@@ -31,12 +31,12 @@ export default function ManagerAuth() {
       
       // if role is not an admin or manager, redirect to sign in
       if(!decoded.role || (decoded.role !== "ADMIN")) {
-        logoutUser("/manager/sign-in")
+        logoutUser("/")
         return 
       }
 
       // if valid role, redirect to manager dashboard
-      router.push('/manager/');      
+      router.push('/companies');      
     }, [router]);
 
     
@@ -81,13 +81,13 @@ export default function ManagerAuth() {
           await loginUser({ email, password })
         } else {
           await registerCompany({ 
-            admin_email: email, 
-            admin_name: adminName, 
+            email: email, 
+            name: adminName, 
             password, 
           })
           await loginUser({ email, password })
         }
-        router.push('/manager')
+        router.push('/companies')
       } catch (error: any) {
         setIsLoading(false)
         setToast({ 

@@ -3,13 +3,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { logoutUser } from '@/apiHandlers/auth';
 import { jwtDecode } from "jwt-decode";
+import Link from 'next/link'; // Added for the redirect button
+import { useParams, useRouter } from 'next/navigation';
 
-// Mock data for companies
-const COMPANIES = [
-  { id: '1', name: 'Garden Corp', plan: 'Enterprise' },
-  { id: '2', name: 'Skyline Inc', plan: 'Pro' },
-  { id: '3', name: 'Bloom Ltd', plan: 'Free' },
-];
+interface Company {
+  id: string;
+  name: string;
+  plan?: string; // Optional since your new state structure focus on {id, name}
+}
 
 function getJWTPayload() {
   if (typeof window === 'undefined') return null;
@@ -35,17 +36,30 @@ export const navItemsMainAdmin = [
   { id: 'store', label: 'Tienda', desc: 'Personaliza el aspecto de tu tienda' },
 ];
 
-export function Sidebar({ activeItem = 'products', onNavigate }: { activeItem?: string, onNavigate?: (id: string) => void }) {
+export function Sidebar({ activeItem = 'products'}: { activeItem?: string}) {
+  const params = useParams();
+  const id = params.id;
+  const router = useRouter();
+
   const { theme, setTheme } = useTheme();
   const [hovered, setHovered] = useState<string | null>(null);
   const [role, setRole] = useState<"MAIN_ADMIN" | "MANAGER" | null>(null);
   
-  // Dropdown State
+  // New States
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(COMPANIES[0]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+
+  // Handle initial selection when companies are fetched
+  useEffect(() => {
+    if (companies.length > 0 && !selectedCompany) {
+      setSelectedCompany(companies[0]);
+    }
+  }, [companies, selectedCompany]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -76,56 +90,61 @@ export function Sidebar({ activeItem = 'products', onNavigate }: { activeItem?: 
   return (
     <aside className="w-full h-full flex flex-col bg-white dark:bg-[#1e2330] border-r border-slate-200 dark:border-white/10 transition-colors duration-500">
       
-      {/* 1. Company Switcher Dropdown */}
+      {/* 1. Company Switcher Section */}
       <div className="p-6 relative" ref={dropdownRef}>
-        <button 
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-green-500/50 transition-all group"
-        >
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 flex-shrink-0 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-              {selectedCompany.name.charAt(0)}
-            </div>
-            <div className="text-left overflow-hidden">
-              <p className="text-[11px] font-black uppercase tracking-tight dark:text-white truncate">
-                {selectedCompany.name}
-              </p>
-              <p className="text-[8px] font-bold text-green-500 uppercase tracking-widest">
-                {selectedCompany.plan} Plan
-              </p>
-            </div>
-          </div>
-          <svg 
-            className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} 
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
-
-        {/* Dropdown Menu */}
-        {isDropdownOpen && (
-          <div className="absolute left-6 right-6 mt-2 py-2 bg-white dark:bg-[#252b3b] border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
-            <p className="px-4 py-2 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Select Organization</p>
-            {COMPANIES.map((company) => (
-              <button
-                key={company.id}
-                onClick={() => {
-                  setSelectedCompany(company);
-                  setIsDropdownOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
-              >
-                <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold ${selectedCompany.id === company.id ? 'bg-green-500 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
-                  {company.name.charAt(0)}
+          <>
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-green-500/50 transition-all group"
+            >
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-8 h-8 flex-shrink-0 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                  {selectedCompany?.name.charAt(0) || '?'}
                 </div>
-                <span className={`text-xs font-bold ${selectedCompany.id === company.id ? 'text-green-500' : 'text-slate-600 dark:text-slate-300'}`}>
-                  {company.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
+                <div className="text-left overflow-hidden">
+                  <p className="text-[11px] font-black uppercase tracking-tight dark:text-white truncate">
+                    {selectedCompany?.name || 'Select Company'}
+                  </p>
+                  {selectedCompany?.plan && (
+                    <p className="text-[8px] font-bold text-green-500 uppercase tracking-widest">
+                      {selectedCompany.plan} Plan
+                    </p>
+                  )}
+                </div>
+              </div>
+              <svg 
+                className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {/* @todo show current company name, and add a back icon, when click, back to /companies */}
+            {isDropdownOpen && (
+              <div className="absolute left-6 right-6 mt-2 py-2 bg-white dark:bg-[#252b3b] border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                <p className="px-4 py-2 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Select Organization</p>
+                {companies.map((company) => (
+                  <button
+                    key={company.id}
+                    onClick={() => {
+                      setSelectedCompany(company);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                  >
+                    <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold ${selectedCompany?.id === company.id ? 'bg-green-500 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
+                      {company.name.charAt(0)}
+                    </div>
+                    <span className={`text-xs font-bold ${selectedCompany?.id === company.id ? 'text-green-500' : 'text-slate-600 dark:text-slate-300'}`}>
+                      {company.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
       </div>
 
       {/* 2. Navigation List */}
@@ -135,7 +154,7 @@ export function Sidebar({ activeItem = 'products', onNavigate }: { activeItem?: 
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate?.(item.id)}
+              onClick={() => router.push(`/manage/${id}/${item.id}`)}
               onMouseEnter={() => setHovered(item.id)}
               onMouseLeave={() => setHovered(null)}
               className={`w-full group relative flex items-center gap-4 p-4 rounded-[1.25rem] transition-all duration-300 ${
@@ -163,7 +182,7 @@ export function Sidebar({ activeItem = 'products', onNavigate }: { activeItem?: 
         })}
       </nav>
 
-      {/* 3. Footer Section */}
+            {/* 3. Footer Section */}
       <div className="p-4 mt-auto space-y-2 border-t border-slate-100 dark:border-white/5">
         <button 
           onClick={toggleTheme}
@@ -177,13 +196,14 @@ export function Sidebar({ activeItem = 'products', onNavigate }: { activeItem?: 
           </span>
         </button>
 
-        <button onClick={()=>logoutUser("/manager/sign-in")} className="w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-all group">
+        <button onClick={()=>logoutUser("/")} className="w-full flex items-center gap-4 p-4 rounded-2xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-all group">
           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
           </svg>
           <span className="text-[9px] font-black uppercase tracking-widest">Exit System</span>
         </button>
       </div>
+
     </aside>
   );
 }

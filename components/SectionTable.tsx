@@ -19,7 +19,7 @@ type TableCells =
 
 export interface RowItem extends Record<string, any> {
   id: string | number; // This is now mandatory
-  isDisabled: boolean
+  disabled: boolean
   cells: TableCells[]
 }
 
@@ -50,7 +50,7 @@ export function SectionTable({ columns, rows, actions }:Params) {
           {rows.length === 0 ? (
             <tr>
               <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                No products found. Adjust your filters or create a new one.
+                No hay productos. Crea uno nuevo o ajusta los filtros
               </td>
             </tr>
           ) : (
@@ -58,7 +58,7 @@ export function SectionTable({ columns, rows, actions }:Params) {
               <tr
                 key={row.id}
                 className={`hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors ${
-                  row.isDisabled ? 'opacity-60 grayscale' : ''
+                  row.disabled ? 'opacity-60 grayscale' : ''
                 }`}
               >
                 {
@@ -88,7 +88,7 @@ export function SectionTable({ columns, rows, actions }:Params) {
                             <>
                               <div className="font-semibold text-gray-900 dark:text-white">
                                 {cell.title}
-                                {row.isDisabled && (
+                                {row.disabled && (
                                   <span className="ml-2 text-[10px] uppercase tracking-wide bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">Disabled</span>
                                 )}
                               </div>

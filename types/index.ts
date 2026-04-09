@@ -21,5 +21,5 @@ export type Product = {
   stock: number;
   categories: Category[];
   images: ProductImage[];
-  isDisabled?: boolean;
+  disabled?: boolean;
 };

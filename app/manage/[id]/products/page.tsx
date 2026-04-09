@@ -1,14 +1,13 @@
 'use client'
+import { CreateProduct, createProduct, deleteProduct, getProducts, UpdateProduct, updateProduct } from '@/apiHandlers/products';
 import { ProductModal } from '@/components/products/ProductCreateEditModal';
 import { SectionFilters } from '@/components/SectionFilters';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SectionPagination } from '@/components/SectionPagination';
 import { RowItem, SectionTable } from '@/components/SectionTable';
-import { CloseIcon, ExternalLinkIcon, GripIcon, TrashIcon } from '@/icons';
-import { Category, Product, ProductImage } from '@/types';
-import React, { useState, useEffect, DragEvent } from 'react';
-
-
+import { Category, Product } from '@/types';
+import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 // --- Mock Data ---
 const MOCK_CATEGORIES: Category[] = [
@@ -18,63 +17,10 @@ const MOCK_CATEGORIES: Category[] = [
   { id: 4, name: 'Accessories', colorClasses: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
 ];
 
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: 'Wireless Headphones',
-    description: 'High quality noise-canceling headphones.',
-    price: 199.99,
-    sku: 'WH-001',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    stock: 45,
-    categories: [MOCK_CATEGORIES[0], MOCK_CATEGORIES[3]],
-    images: [{ id: 101, url: 'https://picsum.photos/seed/hp1/200' }, { id: 102, url: 'https://picsum.photos/seed/hp2/200' }],
-    isDisabled: false,
-  },
-  {
-    id: 2,
-    name: 'Cotton T-Shirt',
-    description: '100% organic cotton basic tee.',
-    price: 19.99,
-    sku: 'TS-BLK-M',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    stock: 0,
-    categories: [MOCK_CATEGORIES[2]],
-    images: [{ id: 201, url: 'https://picsum.photos/seed/tee1/200' }],
-    isDisabled: false,
-  },
-  {
-    id: 3,
-    name: 'Smart Coffee Maker',
-    description: 'Brew coffee from your phone.',
-    price: 129.5,
-    sku: 'SCM-22',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    stock: 12,
-    categories: [MOCK_CATEGORIES[0], MOCK_CATEGORIES[1]],
-    images: [{ id: 301, url: 'https://picsum.photos/seed/coffee/200' }],
-    isDisabled: false,
-  },
-  {
-    id: 4,
-    name: 'Leather Wallet',
-    description: 'Genuine leather slim wallet.',
-    price: 45.0,
-    sku: 'LW-099',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    stock: 8,
-    categories: [MOCK_CATEGORIES[3]],
-    images: [],
-    isDisabled: true,
-  },
-];
-
 // --- Main Component ---
 export default function ProductManagement() {
+  const params = useParams()
+  const companyId = params.id
   // Global States
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -96,11 +42,10 @@ export default function ProductManagement() {
     setLoading(true);
     setError(null);
     try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      // In real life, fetch from API here
-      setProducts(MOCK_PRODUCTS);
+      const productsResult = await getProducts(companyId as unknown as number)  
+      setProducts(productsResult);
     } catch (err) {
+      setProducts([])
       setError('Failed to fetch products. Please try again.');
     } finally {
       setLoading(false);
@@ -126,50 +71,85 @@ export default function ProductManagement() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (productId: string|number) => {
-    console.log('DELETE Product ID:', productId);
-    // Optimistic UI update for mockup
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
+  const handleDelete = async(productId: string|number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // @todo add a confirm modal first 
+      await deleteProduct(productId as number)
+      await fetchProducts()
+    } catch (error) {
+      setError('Failed to delete product. Please try again.');
+    }
+    finally {
+      setLoading(false)
+    }
   };
 
-  const handleDisable = (productId: string|number) => {
-    console.log('TOGGLE DISABLE Product ID:', productId);
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, isDisabled: !p.isDisabled } : p))
-    );
+  const handleDisable = async(productId: string|number) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const product = products.find(p => p.id == productId)
+      if(!product) return
+      await updateProduct(productId as number, { disabled: !product.disabled })
+      await fetchProducts()
+    } catch (error) {
+        setError('Failed to disable product. Please try again.');
+    }
+    finally {
+      setLoading(false)
+    }
+    
   };
 
-  // --- Derived Data ---
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory =
-      selectedCategory === '' ||
-      p.categories.some((c) => c.id.toString() === selectedCategory);
-    return matchesSearch && matchesCategory;
-  });
+  const handleUpdateProduct = async(productId: string|number, data: UpdateProduct) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await updateProduct(productId as number, data)
+      await fetchProducts()
+    } catch (error) {
+        setError('Failed to update product. Please try again.');
+    }
+    finally {
+      setLoading(false)
+    }    
+  };
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleCreateProduct = async(data: CreateProduct) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await createProduct(data)
+      await fetchProducts()
+    } catch (error) {
+        setError('Failed to create product. Please try again.');
+    }
+    finally {
+      setLoading(false)
+    }    
+  };
+
+  const totalPages = Math.ceil(products.length / itemsPerPage);
 
   const getRowItems = () => {
-    if(paginatedProducts.length === 0) return []
+    if(products.length === 0) return []
     const rows: RowItem[] = []
-    for(let i = 0; i<paginatedProducts.length; i++) {
+    for(let i = 0; i<products.length; i++) {
       rows.push(
         { 
-          id: paginatedProducts[i].id, 
-          isDisabled: paginatedProducts[i].isDisabled || false, 
+          id: products[i].id, 
+          disabled: products[i].disabled || false, 
           cells: [
-            { type:"image", value: paginatedProducts[i].images[0]?.url },
-            { type: "titleAndSubtitle", title: paginatedProducts[i].name, subtitle: paginatedProducts[i].sku || "" }, 
-            { type: "string", value: `${Number(paginatedProducts[i].price).toFixed(2)}`  },
-            { type: "string", value: paginatedProducts[i].stock === 0 ? <span className="text-red-600 dark:text-red-400 font-semibold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-md">Out of stock</span> : <span className="text-gray-700 dark:text-gray-300">{paginatedProducts[i].stock}</span> },
-            { type: "coloredTag", tags: paginatedProducts[i].categories }
+            { type:"image", value: products[i].images ? products[i].images[0]?.url : "" },
+            { type: "titleAndSubtitle", title: products[i].name, subtitle: products[i].sku || "" }, 
+            { type: "string", value: `${Number(products[i].price).toFixed(2)}`  },
+            { type: "string", value: products[i].stock === 0 ? <span className="text-red-600 dark:text-red-400 font-semibold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-md">Out of stock</span> : <span className="text-gray-700 dark:text-gray-300">{products[i].stock}</span> },
+            { type: "coloredTag", tags: products[i].categories }
           ] 
         }
       )
@@ -209,18 +189,18 @@ export default function ProductManagement() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <SectionTable 
               columns={[
-                { label: "Image", key: "key"},
-                { label: "Product Details", key: "key"},
-                { label: "Price", key: "key"}, 
-                { label: "Stock", key: "key"},
-                { label: "Categories", key: "key"},
+                { label: "Imagen", key: "key"},
+                { label: "Detalles", key: "key"},
+                { label: "Precio", key: "key"}, 
+                { label: "Cantidad", key: "key"},
+                { label: "Categorias", key: "key"},
               ]}
 
               rows={getRowItems()} 
          
               actions={[
                 { label:"Edit", icon:"edit", handleClick: handleUpdateClick },
-                { label:"Edit", icon:"disable", handleClick: handleDisable },
+                { label:"Disable", icon:"disable", handleClick: handleDisable },
                 { label:"Delete", icon:"delete", handleClick: handleDelete },
               ]}
             />
@@ -229,7 +209,7 @@ export default function ProductManagement() {
               totalPages={totalPages}
               currentPage={currentPage}
               itemsPerPage={itemsPerPage}
-              productsLength={filteredProducts.length}
+              productsLength={products.length}
               handleSetPage={(page)=>setCurrentPage(page)}
             />
            
@@ -245,11 +225,8 @@ export default function ProductManagement() {
             setIsModalOpen(false);
             setModalError(null);
           }}
-          onSave={(data) => {
-            console.log(editingProduct ? 'UPDATE Product Payload:' : 'CREATE Product Payload:', data);
-            setIsModalOpen(false);
-            // Simulated fake success
-          }}
+          onCreate={handleCreateProduct}
+          onUpdate={handleUpdateProduct}
           error={modalError}
         />
       )}

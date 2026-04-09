@@ -7,8 +7,8 @@ const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/auth`;
  * Interface for Register Request Body
  */
 export interface RegisterData {
-  admin_email: string;
-  admin_name: string;
+  email: string;
+  name: string;
   password: string;
 }
 
@@ -75,19 +75,3 @@ export const logoutUser = (path: string) => {
 };
 
 
-
-///////////////////
-///////////////////
-function getAuthHeader() {
-  const token = localStorage.getItem('jwt');
-  if(!token) {
-    logoutUser("/manager")
-    // throw new Error("Unauthorized")
-  }
-
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  };
-};

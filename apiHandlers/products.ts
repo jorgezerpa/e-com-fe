@@ -2,198 +2,59 @@ import axios from 'axios';
 import { Product } from '@/types';
 
 // http://localhost:3001/api...
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/admin`;
-const JWT = 'YOUR_TOKEN_HERE'; // Temporary placeholder for your token logic
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/catalog`;
 
 // Configure axios defaults for this file
 const adminClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    Authorization: `Bearer ${JWT}`,
-  },
 });
 
-/**
- * MANAGERS
- */
 
-export interface CreateManagerData {
-  email: string;
-  name: string;
-  password: string;
+
+export interface CreateProduct {
+  name: string
+  description: string
+  price: string | number
+  sku: string
+  stock: number
+  companyId: number
+  categoryIds: number[]
 }
 
-export interface UpdateManagerData {
-  name?: string;
-  email?: string;
-  password?: string
+export interface UpdateProduct {
+  name?: string
+  description?: string
+  price?: string | number
+  sku?: string
+  stock?: number
+  disabled?: boolean
 }
 
-export interface CreateAgentData {
-  email: string;
-  name: string;
-  password: string;
-  leadDeskId: string
-}
 
-export interface UpdateAgentData {
-  name?: string;
-  email?: string;
-  password?: string;
-  leadDeskId?: string
-}
 
-export const updateAgentsLevel = async () => {
-  const response = await adminClient.post(`/updateAgentsLevel`, {}, getAuthHeader());
+export const getProducts = async (companyId: number, productId?: number) => {
+  const response = await adminClient.get(`/products?companyId=${companyId}${productId ? `&id=${productId}` : ``}`,getAuthHeader());
   return response.data;
 };
 
-export const saveLeadDeskEventsIds = async (seedEventIds: string[], saleEventIds: string[]) => {
-  const response = await adminClient.post('/upsertLeadDeskEventIds', { seedEventIds, saleEventIds },getAuthHeader());
-  return response.data;
-}
-;
-export const getLeadDeskEventsIds = async () => {
-  const response = await adminClient.get('/getLeadDeskEventIds',getAuthHeader());
+export const createProduct = async (params: CreateProduct) => {
+  const response = await adminClient.post(`/products`, params, getAuthHeader());
   return response.data;
 };
 
-export const saveLeadDeskAuthString = async (authString: string) => {
-  const response = await adminClient.post('/upsertLeadDeskAPIAuthString', { authString },getAuthHeader());
+export const updateProduct = async (productId: number, params: UpdateProduct) => {
+  const response = await adminClient.put(`/products?id=${productId}`, params, getAuthHeader());
   return response.data;
 };
 
-// check if a auth string was already registered
-export const getLeadDeskAuthString = async () => {
-  const response = await adminClient.get('/getLeadDeskAPIAuthString', getAuthHeader());
+export const deleteProduct = async (productId: number) => {
+  const response = await adminClient.delete(`/products?id=${productId}`, getAuthHeader());
   return response.data;
 };
 
-export const addManager = async (data: CreateManagerData) => {
-  const response = await adminClient.post('/addManager', data,getAuthHeader());
-  return response.data;
-};
-
-export const editManager = async (id: number, data: UpdateManagerData) => {
-  const response = await adminClient.put(`/editManager/${id}`, data, getAuthHeader());
-  return response.data;
-};
-
-export const getManager = async (id: number) => {
-  const response = await adminClient.get(`/getManager/${id}`, getAuthHeader());
-  return response.data;
-};
-
-export const getManagersList = async (page: number = 1, limit: number = 10) => {
-  const response = await adminClient.get('/getManagersList', {
-    ...getAuthHeader(),
-    params: { page, limit },
-  });
-  return response.data;
-};
-
-export const removeManager = async (id: number) => {
-  const response = await adminClient.delete(`/removeManagers/${id}`, getAuthHeader());
-  return response.data;
-};
-
-/**
- * AGENTS
- */
-
-export const addAgent = async (data: CreateAgentData) => {
-  const response = await adminClient.post('/addAgent', data, getAuthHeader());
-  return response.data;
-};
-
-export const editAgent = async (id: number, data: UpdateAgentData) => {
-  const response = await adminClient.put(`/editAgent/${id}`, data, getAuthHeader());
-  return response.data;
-};
-
-export const getAgent = async (id: number) => {
-  const response = await adminClient.get(`/getAgent/${id}`, getAuthHeader());
-  return response.data;
-};
-
-export const getAgentDetails = async (id: number, from: string, to: string) => {
-  const response = await adminClient.get(`/getAgentDetails?agentId=${id}`, {
-    ...getAuthHeader(),
-    params: { from, to },
-  });
-  return response.data;
-};
-
-export const getAgentsList = async (page: number = 1, limit: number = 10) => {
-  const response = await adminClient.get('/getAgentsList', {
-    ...getAuthHeader(),
-    params: { page, limit },
-  });
-  return response.data;
-};
-
-export const removeAgent = async (id: number) => {
-  const response = await adminClient.delete(`/removeAgent/${id}`, getAuthHeader());
-  return response.data;
-};
-
-/**
- * GOALS
- */
 
 
 
-export const createGoal = async (data: GoalData) => {
-  const response = await adminClient.post('/goals/create', data, getAuthHeader());
-  return response.data;
-};
-
-export const getCompanyGoals = async () => {
-  const response = await adminClient.get('/goals/company', {
-    ...getAuthHeader(),
-  });
-  return response.data;
-};
-
-export const updateGoal = async (id: number, data: Partial<GoalData>) => {
-  const response = await adminClient.put(`/goals/update/${id}`, data, getAuthHeader());
-  return response.data;
-};
-
-export const deleteGoal = async (id: number) => {
-  const response = await adminClient.delete(`/goals/delete/${id}`, getAuthHeader());
-  return response.data;
-};
-
-/**
- * GOAL ASSIGNATIONS
- */
-
-export const getAssignations = async (from: string, to: string) => {
-  const response = await adminClient.get('/assignation', {
-    ...getAuthHeader(),
-    params: { from, to },
-  });
-  return response.data;
-};
-
-export const upsertAssignation = async (date: string, goalId: number) => {
-  const response = await adminClient.post('/upsert-assignation', { date, goalId }, getAuthHeader());
-  return response.data;
-};
-
-export const deleteAssignationById = async (id: number) => {
-  const response = await adminClient.delete(`/delete-assignation-by-id/${id}`, getAuthHeader());
-  return response.data;
-};
-
-export const deleteAssignationByDate = async (date: string) => {
-  const response = await adminClient.delete('/delete-assignation-by-date', {
-    ...getAuthHeader(),
-    params: { date },
-  });
-  return response.data;
-};
 
 ///////////////////
 ///////////////////
@@ -207,6 +68,9 @@ function getAuthHeader() {
   return {
     headers: {
       Authorization: `Bearer ${token}`
+    }, 
+    paramsSerializer: {
+      indexes: null
     }
   };
 };

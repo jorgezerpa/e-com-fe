@@ -1,6 +1,7 @@
 'use client';
 import { DisableIcon, EditIcon, TrashIcon } from '@/icons';
-import { MouseEventHandler, useEffect } from 'react';
+import { Category } from '@/types';
+import { MouseEventHandler, ReactElement, useEffect } from 'react';
 
 interface ActionButton {
   handleClick: (id:string|number) => void
@@ -8,9 +9,13 @@ interface ActionButton {
   icon: "edit"|"delete"|"disable" 
 }
 
-interface TableCells extends Record<string, any> {
-  type: "string"|"image"|"titleAndSubtitle"|"coloredTag"
-}
+// Discriminated Union Pattern
+type TableCells = 
+  | { type: 'string'; value: string|ReactElement<any, any> }
+  | { type: 'image'; value: string }
+  | { type: 'titleAndSubtitle'; title: string; subtitle: string }
+  | { type: 'coloredTag'; tags: Category[] }
+
 
 export interface RowItem extends Record<string, any> {
   id: string | number; // This is now mandatory

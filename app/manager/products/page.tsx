@@ -166,7 +166,7 @@ export default function ProductManagement() {
           isDisabled: paginatedProducts[i].isDisabled || false, 
           cells: [
             { type:"image", value: paginatedProducts[i].images[0]?.url },
-            { type: "titleAndSubtitle", title: paginatedProducts[i].name, subtitle: paginatedProducts[i].sku  }, 
+            { type: "titleAndSubtitle", title: paginatedProducts[i].name, subtitle: paginatedProducts[i].sku || "" }, 
             { type: "string", value: `${Number(paginatedProducts[i].price).toFixed(2)}`  },
             { type: "string", value: paginatedProducts[i].stock === 0 ? <span className="text-red-600 dark:text-red-400 font-semibold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-md">Out of stock</span> : <span className="text-gray-700 dark:text-gray-300">{paginatedProducts[i].stock}</span> },
             { type: "coloredTag", tags: paginatedProducts[i].categories }

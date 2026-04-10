@@ -1,8 +1,10 @@
-// --- Types ---
+import { COLOR_PRESETS } from "@/constants";
+
 export type Category = {
   id: number;
   name: string;
-  colorClasses: string; // e.g., "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+  description: string;
+  color: Color
 };
 
 export type ProductImage = {
@@ -23,3 +25,11 @@ export type Product = {
   images: ProductImage[];
   disabled?: boolean;
 };
+
+
+// 2. Derive the Color type from the keys of the preset
+export type Color = keyof typeof COLOR_PRESETS;
+// Color is now exactly: "BLUE" | "GREEN" | "PURPLE" | "ORANGE" | "RED" | "PINK"
+
+// 3. (Optional) Enforce the interface shape
+export type CategoryColorsPreset = Record<Color, string>;

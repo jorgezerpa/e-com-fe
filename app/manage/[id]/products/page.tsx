@@ -7,17 +7,9 @@ import { SectionHeader } from '@/components/SectionHeader';
 import { SectionPagination } from '@/components/SectionPagination';
 import { RowItem, SectionTable } from '@/components/SectionTable';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Category, Product } from '@/types';
+import { Product } from '@/types';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-
-// --- Mock Data ---
-const MOCK_CATEGORIES: Category[] = [
-  { id: 1, name: 'Electronics', colorClasses: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  { id: 2, name: 'Home', colorClasses: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  { id: 3, name: 'Clothing', colorClasses: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  { id: 4, name: 'Accessories', colorClasses: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-];
 
 // --- Main Component ---
 export default function ProductManagement() {

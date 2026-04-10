@@ -1,4 +1,5 @@
 'use client';
+import { COLOR_PRESETS } from '@/constants';
 import { DisableIcon, EditIcon, TrashIcon } from '@/icons';
 import { Category } from '@/types';
 import { MouseEventHandler, ReactElement, useEffect } from 'react';
@@ -108,10 +109,10 @@ export function SectionTable({ columns, rows, actions }:Params) {
                             <>
                               <div className="flex flex-wrap gap-1.5">
                                 {cell.tags.length > 0 ? (
-                                  cell.tags.map((tag:any) => (
+                                  cell.tags.map((tag) => (
                                     <span
                                       key={tag.id}
-                                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${tag.colorClasses}`}
+                                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${COLOR_PRESETS[tag.color]}`}
                                     >
                                       {tag.name}
                                     </span>

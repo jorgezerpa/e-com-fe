@@ -8,23 +8,17 @@ const categoriesClient = axios.create({
   baseURL: API_BASE_URL,
 });
 
-export interface CreateProduct {
+export interface CreateCategory {
   name: string
   description: string
-  price: string | number
-  sku: string
-  stock: number
   companyId: number
-  categoryIds: number[]
+  color: string
 }
 
-export interface UpdateProduct {
+export interface UpdateCategory {
   name?: string
   description?: string
-  price?: string | number
-  sku?: string
-  stock?: number
-  disabled?: boolean
+  color?: string
 }
 
 export const getCategories = async (companyId: number) => {
@@ -37,18 +31,18 @@ export const getCategories = async (companyId: number) => {
   return response.data;
 };
 
-export const createProduct = async (params: CreateProduct) => {
-  const response = await categoriesClient.post(`/products`, params, getAuthHeader());
+export const createCategory = async (params: CreateCategory) => {
+  const response = await categoriesClient.post(`/categories`, params, getAuthHeader());
   return response.data;
 };
 
-export const updateProduct = async (productId: number, params: UpdateProduct) => {
-  const response = await categoriesClient.put(`/products?id=${productId}`, params, getAuthHeader());
+export const updateCategory = async (categoryId: number, params: UpdateCategory) => {
+  const response = await categoriesClient.put(`/categories?id=${categoryId}`, params, getAuthHeader());
   return response.data;
 };
 
-export const deleteProduct = async (productId: number) => {
-  const response = await categoriesClient.delete(`/products?id=${productId}`, getAuthHeader());
+export const deleteCategory = async (categoryId: number) => {
+  const response = await categoriesClient.delete(`/categories?id=${categoryId}`, getAuthHeader());
   return response.data;
 };
 

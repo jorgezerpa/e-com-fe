@@ -1,199 +1,217 @@
 'use client'
+import { createCategory, CreateCategory, deleteCategory, getCategories, updateCategory, UpdateCategory } from '@/apiHandlers/categories';
+import { CreateProduct, createProduct, deleteProduct, getProducts, UpdateProduct, updateProduct } from '@/apiHandlers/products';
+import { ProductModal } from '@/components/products/ProductCreateEditModal';
 import { SectionFilters } from '@/components/SectionFilters';
 import { SectionHeader } from '@/components/SectionHeader';
-import React, { useState, useMemo } from 'react';
-
-// --- Types ---
-export type Category = {
-  id: number;
-  name: string;
-  description: string | null;
-  colorClasses: string; // The Tailwind classes for the "bubble"
-  _count?: {
-    products: number;
-  };
-};
-
-// --- Mock Data ---
-const MOCK_CATEGORIES: Category[] = [
-  { id: 1, name: 'Electronics', description: 'Gadgets, hardware, and tech accessories.', colorClasses: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', _count: { products: 12 } },
-  { id: 2, name: 'Home', description: 'Furniture and kitchen appliances.', colorClasses: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', _count: { products: 8 } },
-  { id: 3, name: 'Clothing', description: 'Seasonal wear and organic fabrics.', colorClasses: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', _count: { products: 24 } },
-  { id: 4, name: 'Accessories', description: 'Wallets, watches, and jewelry.', colorClasses: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200', _count: { products: 5 } },
-];
-
-const COLOR_PRESETS = [
-  { name: 'Blue', classes: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  { name: 'Green', classes: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  { name: 'Purple', classes: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  { name: 'Orange', classes: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-  { name: 'Red', classes: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
-  { name: 'Pink', classes: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' },
-];
-
-// --- Icons ---
-const PlusIcon = () => <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>;
-const SearchIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
-const EditIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
-const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
-const BoxIcon = () => <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
-const CloseIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
+import { SectionPagination } from '@/components/SectionPagination';
+import { RowItem, SectionTable } from '@/components/SectionTable';
+import { useDebounce } from '@/hooks/useDebounce';
+import { CloseIcon } from '@/icons';
+import { Category, Color } from '@/types';
+import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { COLOR_PRESETS } from '@/constants';
 
 // --- Main Component ---
-export default function CategoryManagement() {
-  const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
-  const [searchQuery, setSearchQuery] = useState('');
+export default function CategoriesManagement() {
+  const params = useParams()
+  const companyId = params.id
+  // Global States
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
-  // Filtered Logic
-  const filteredCategories = useMemo(() => {
-    return categories.filter(cat => 
-      cat.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }, [categories, searchQuery]);
+  const fetchCategories = async () => {
+    setLoading(true); 
+    setError(null);
+    try {
+      const categoriesResult = await getCategories(companyId as unknown as number)  
+      setCategories(categoriesResult);
+    } catch (err) {
+      setCategories([])
+      setError('Failed to fetch categories. Please refetch the page.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Handlers
-  const handleOpenCreate = () => {
+  useEffect(()=>{
+    fetchCategories();
+  }, [])
+
+  // --- Handlers ---
+  const handleUpdateClick = (categoryId: string|number) => {
+    const category = categories.find((c) => c.id == categoryId)
+    if(!category) {
+      return
+    } 
+    setEditingCategory(category);
+    setIsModalOpen(true);
+  };
+
+  const handleCreateClick = () => {
     setEditingCategory(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (cat: Category) => {
-    setEditingCategory(cat);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this category? Products will remain but will be uncategorized.')) {
-      console.log('DELETE Category ID:', id);
-      setCategories(prev => prev.filter(c => c.id !== id));
+  const handleDelete = async(categoryId: string|number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // @todo add a confirm modal first 
+      await deleteCategory(categoryId as number)
+      await fetchCategories()
+    } catch (error) {
+      setError('Failed to delete product. Please try again.');
+    }
+    finally {
+      setLoading(false)
     }
   };
 
-  const handleSave = (data: Partial<Category>) => {
-    if (editingCategory) {
-      console.log('UPDATE Category Payload:', data);
-    } else {
-      console.log('CREATE Category Payload:', data);
+  const handleUpdateCategory = async(categoryId: string|number, data: UpdateCategory) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await updateCategory(categoryId as number, data)
+      await fetchCategories()
+    } catch (error) {
+        setError('Failed to update category. Please try again.');
     }
-    setIsModalOpen(false);
+    finally {
+      setLoading(false)
+    }    
   };
+
+  const handleCreateCategory = async(data: CreateCategory) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await createCategory(data)
+      await fetchCategories()
+    } catch (error) {
+        setError('Failed to create category. Please try again.');
+    }
+    finally {
+      setLoading(false)
+    }    
+  };
+
+  const getRowItems = () => {
+    if(categories.length === 0) return []
+    const rows: RowItem[] = []
+    for(let i = 0; i<categories.length; i++) {
+      rows.push(
+        { 
+          id: categories[i].id, 
+          disabled: false, 
+          cells: [
+            { type: "coloredTag", tags: [categories[i]] }, 
+            { type: "titleAndSubtitle", title: categories[i].name, subtitle: categories[i].description || "" }, 
+            { type: "string", value: `related products` },
+          ] 
+        }
+      )
+    }
+    return rows
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-8 font-sans transition-colors duration-200">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Header & Controls */}
+        <SectionHeader title='Categorias' description='Organiza tus categorias' buttonLabel='Crear Categoria' buttonAction={handleCreateClick} />
 
-        <SectionHeader title='Categorias' description='Organiza tus categorias' buttonLabel='Crear Categoria' buttonAction={handleOpenCreate} />
-        <SectionFilters 
-          searchBars={[
-            { title:"Buscar", placeholder:"nombre", value: searchQuery, handleChangeValue: (e) => setSearchQuery(e.target.value)  },
-          ]}
-          dropdownAllSelectedLabel='Todas'
-          dropdowns={[]}
-          datePickers={[]}
-        />        
-
-        {/* Categories Grid/Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                  <th className="p-5 font-semibold">Preview Tag</th>
-                  <th className="p-5 font-semibold">Category Info</th>
-                  <th className="p-5 font-semibold">Related Products</th>
-                  <th className="p-5 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {filteredCategories.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-10 text-center text-gray-500 dark:text-gray-400">
-                      No categories found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredCategories.map((cat) => (
-                    <tr key={cat.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                      <td className="p-5">
-                        <span className={`px-4 py-1.5 rounded-full text-sm font-bold shadow-sm border ${cat.colorClasses}`}>
-                          {cat.name}
-                        </span>
-                      </td>
-                      <td className="p-5 max-w-xs">
-                        <div className="font-bold text-gray-900 dark:text-white">{cat.name}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
-                          {cat.description || 'No description provided.'}
-                        </div>
-                      </td>
-                      <td className="p-5">
-                        <button 
-                          onClick={() => console.log('NAVIGATE to products with filter:', cat.id)}
-                          className="flex items-center text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-blue-200"
-                        >
-                          <BoxIcon />
-                          See related products ({cat._count?.products || 0})
-                        </button>
-                      </td>
-                      <td className="p-5 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleOpenEdit(cat)}
-                            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 bg-gray-100 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                            title="Edit Category"
-                          >
-                            <EditIcon />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(cat.id)}
-                            className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            title="Delete Category"
-                          >
-                            <TrashIcon />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* State Handling (Loading / Error) */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        </div>
+        ) : error ? (
+          <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-center border border-red-200 dark:border-red-800">
+            {error}
+          </div>
+        ) : (
+          /* Table Area */
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <SectionTable 
+              columns={[
+                { label: "Preview Tag", key: "key"},
+                { label: "Category Info", key: "key"},
+                { label: "Related Products", key: "key"}, 
+              ]}
+
+              rows={getRowItems()} 
+         
+              actions={[
+                { label:"Edit", icon:"edit", handleClick: handleUpdateClick },
+                { label:"Delete", icon:"delete", handleClick: handleDelete },
+              ]}
+            />
+           
+          </div>
+        )}
       </div>
 
       {/* --- Modal --- */}
       {isModalOpen && (
         <CategoryModal 
           category={editingCategory} 
-          onClose={() => setIsModalOpen(false)} 
-          onSave={handleSave} 
+          onClose={() => {
+            setIsModalOpen(false);
+            setModalError(null);
+          }}
+          onCreate={handleCreateCategory}
+          onUpdate={handleUpdateCategory}
+          error={modalError}
         />
       )}
     </div>
+
+
+
+
   );
 }
 
+
 // --- Category Modal Component ---
-function CategoryModal({ 
-  category, 
-  onClose, 
-  onSave 
-}: { 
-  category: Category | null; 
-  onClose: () => void; 
-  onSave: (data: Partial<Category>) => void 
-}) {
+function CategoryModal({
+  category,
+  onClose,
+  onCreate,
+  onUpdate,
+  error,
+}: {
+  category: Category | null;
+  onClose: () => void;
+  onCreate: (data: CreateCategory) => void;
+  onUpdate: (id:string|number, data: UpdateCategory) => void;
+  error: string | null;
+}
+) {
+
+  const params = useParams();
+  const companyId = params.id;
+
   const isEditing = !!category;
   const [name, setName] = useState(category?.name || '');
   const [description, setDescription] = useState(category?.description || '');
-  const [selectedColors, setSelectedColors] = useState(category?.colorClasses || COLOR_PRESETS[0].classes);
+  const [selectedColors, setSelectedColors] = useState<"BLUE" | "GREEN" | "PURPLE" | "ORANGE" | "RED" | "PINK">(category?.color||"BLUE");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ name, description, colorClasses: selectedColors });
+    if(isEditing) onUpdate(category.id, { name, description, color: selectedColors as string })
+    if(!isEditing) onCreate({ name, description, color: selectedColors as string, companyId: companyId as unknown as number, })
   };
 
   return (
@@ -212,7 +230,7 @@ function CategoryModal({
           {/* Tag Preview */}
           <div className="flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
             <span className="text-xs font-semibold text-gray-400 uppercase mb-3 tracking-widest">Tag Preview</span>
-            <span className={`px-6 py-2 rounded-full text-lg font-bold shadow-sm border transition-all ${selectedColors}`}>
+            <span className={`px-6 py-2 rounded-full text-lg font-bold shadow-sm border transition-all ${COLOR_PRESETS[selectedColors]}`}>
               {name || 'Category Name'}
             </span>
           </div>
@@ -242,18 +260,18 @@ function CategoryModal({
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Choose Bubble Style</label>
             <div className="grid grid-cols-3 gap-3">
-              {COLOR_PRESETS.map((color) => (
+              {(Object.keys(COLOR_PRESETS) as Color[]).map((color) => (
                 <button
-                  key={color.name}
+                  key={color}
                   type="button"
-                  onClick={() => setSelectedColors(color.classes)}
+                  onClick={() => setSelectedColors(color)}
                   className={`py-2 rounded-lg border-2 transition-all text-xs font-bold ${
-                    selectedColors === color.classes 
+                    selectedColors === color 
                       ? 'border-blue-500 scale-105 shadow-md' 
                       : 'border-transparent opacity-70 hover:opacity-100'
-                  } ${color.classes}`}
+                  } ${COLOR_PRESETS[color]}`}
                 >
-                  {color.name}
+                  {color}
                 </button>
               ))}
             </div>
@@ -279,3 +297,4 @@ function CategoryModal({
     </div>
   );
 }
+

@@ -116,7 +116,7 @@ export default function CategoriesManagement() {
           cells: [
             { type: "coloredTag", tags: [categories[i]] }, 
             { type: "titleAndSubtitle", title: categories[i].name, subtitle: categories[i].description || "" }, 
-            { type: "string", value: `related products` },
+            // { type: "string", value: `related products` },
           ] 
         }
       )
@@ -147,7 +147,7 @@ export default function CategoriesManagement() {
               columns={[
                 { label: "Preview Tag", key: "key"},
                 { label: "Category Info", key: "key"},
-                { label: "Related Products", key: "key"}, 
+                // { label: "Related Products", key: "key"}, 
               ]}
 
               rows={getRowItems()} 

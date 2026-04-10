@@ -4,11 +4,9 @@ import axios from 'axios';
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/catalog`;
 
 // Configure axios defaults for this file
-const productsClient = axios.create({
+const categoriesClient = axios.create({
   baseURL: API_BASE_URL,
 });
-
-
 
 export interface CreateProduct {
   name: string
@@ -29,33 +27,28 @@ export interface UpdateProduct {
   disabled?: boolean
 }
 
-
-
-export const getProducts = async (companyId: number, { productId, searchString, categories }:{ productId?: number, searchString?: string, categories?:number[] }) => {
-  const response = await productsClient.get(`/products`, {
+export const getCategories = async (companyId: number) => {
+  const response = await categoriesClient.get(`/categories`, {
     ...getAuthHeader(),
     params: {
       companyId,
-      id: productId,
-      searchString,
-      categories
     }
   });
   return response.data;
 };
 
 export const createProduct = async (params: CreateProduct) => {
-  const response = await productsClient.post(`/products`, params, getAuthHeader());
+  const response = await categoriesClient.post(`/products`, params, getAuthHeader());
   return response.data;
 };
 
 export const updateProduct = async (productId: number, params: UpdateProduct) => {
-  const response = await productsClient.put(`/products?id=${productId}`, params, getAuthHeader());
+  const response = await categoriesClient.put(`/products?id=${productId}`, params, getAuthHeader());
   return response.data;
 };
 
 export const deleteProduct = async (productId: number) => {
-  const response = await productsClient.delete(`/products?id=${productId}`, getAuthHeader());
+  const response = await categoriesClient.delete(`/products?id=${productId}`, getAuthHeader());
   return response.data;
 };
 

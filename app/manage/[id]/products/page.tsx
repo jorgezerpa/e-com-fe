@@ -1,10 +1,12 @@
 'use client'
+import { getCategories } from '@/apiHandlers/categories';
 import { CreateProduct, createProduct, deleteProduct, getProducts, UpdateProduct, updateProduct } from '@/apiHandlers/products';
 import { ProductModal } from '@/components/products/ProductCreateEditModal';
 import { SectionFilters } from '@/components/SectionFilters';
 import { SectionHeader } from '@/components/SectionHeader';
 import { SectionPagination } from '@/components/SectionPagination';
 import { RowItem, SectionTable } from '@/components/SectionTable';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Category, Product } from '@/types';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -28,6 +30,8 @@ export default function ProductManagement() {
 
   // Filters & Search States
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 500);
+  const [categories, setCategories] = useState<{ id: number, name: string, description: string }[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -42,7 +46,7 @@ export default function ProductManagement() {
     setLoading(true);
     setError(null);
     try {
-      const productsResult = await getProducts(companyId as unknown as number)  
+      const productsResult = await getProducts(companyId as unknown as number, { searchString: debouncedSearch || undefined, categories: selectedCategory ? [Number(selectedCategory)] : undefined })  
       setProducts(productsResult);
     } catch (err) {
       setProducts([])
@@ -52,9 +56,27 @@ export default function ProductManagement() {
     }
   };
 
+  const fetchCategories = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const categoriesResult = await getCategories(companyId as unknown as number)  
+      setCategories(categoriesResult);
+    } catch (err) {
+      setCategories([])
+      setError('Failed to fetch categories. Please refetch the page.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [debouncedSearch, selectedCategory]);
+
+  useEffect(()=>{
+    fetchCategories();
+  }, [])
 
   // --- Handlers ---
   const handleUpdateClick = (productId: string|number) => {
@@ -169,7 +191,7 @@ export default function ProductManagement() {
           ]}
           dropdownAllSelectedLabel='Todas'
           dropdowns={[
-            { title: "Categorias", items: MOCK_CATEGORIES.map(cat => ({ value: cat.id, label: cat.name })), value: selectedCategory, handleChangeValue: (e) => { setSelectedCategory(e.target.value); setCurrentPage(1); } },
+            { title: "Categorias", items: categories.map(cat => ({ value: cat.id, label: cat.name })), value: selectedCategory, handleChangeValue: (e) => { setSelectedCategory(e.target.value); setCurrentPage(1); } },
           ]}
           datePickers={[]}
         />

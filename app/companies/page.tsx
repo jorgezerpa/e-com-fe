@@ -52,7 +52,7 @@ function CompanyModal({ isOpen, onClose, onSave, error }: {
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+              className="w-full p-3 rounded-xl  dark:bg-gray-900 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
               placeholder="Ej: Garden Corp"
             />
           </div>
@@ -64,7 +64,7 @@ function CompanyModal({ isOpen, onClose, onSave, error }: {
               <select 
                 value={formData.currency}
                 onChange={(e) => setFormData({...formData, currency: e.target.value as "USD"|"VES"})}
-                className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm outline-none"
+                className="w-full p-3 rounded-xl  dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm outline-none"
               >
                 <option value="USD">USD ($)</option>
                 <option value="VES">VES (Bs.)</option>
@@ -73,7 +73,7 @@ function CompanyModal({ isOpen, onClose, onSave, error }: {
           </div>
         </div>
 
-        <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex gap-3">
+        <div className="p-6  dark:bg-gray-800/50 flex gap-3">
           <button 
             onClick={onClose}
             className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-colors"
@@ -138,7 +138,7 @@ export default function CompanySelection() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-8 font-sans transition-colors duration-200">
+    <div className="min-h-screen  dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-8 font-sans transition-colors duration-200">
       <div className="max-w-7xl mx-auto space-y-8">
         
         <SectionHeader 
@@ -167,7 +167,7 @@ export default function CompanySelection() {
           </div>
         ) : companies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-center">
-            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900 rounded-2xl flex items-center justify-center mb-4">
+            <div className="w-16 h-16  dark:bg-gray-900 rounded-2xl flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
@@ -209,7 +209,7 @@ export default function CompanySelection() {
                     <span className="text-sm font-semibold">{company.stats?.orders || 0}</span>
                   </div>
                   
-                  <div className="ml-auto w-8 h-8 rounded-full bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition-all">
+                  <div className="ml-auto w-8 h-8 rounded-full  dark:bg-gray-900/50 flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition-all">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                     </svg>

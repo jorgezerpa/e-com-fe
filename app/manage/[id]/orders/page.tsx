@@ -1,187 +1,13 @@
 'use client'
+import { getOrders, updateOrder } from '@/apiHandlers/orders';
 import { SectionFilters } from '@/components/SectionFilters';
 import { SectionHeader } from '@/components/SectionHeader';
-import React, { useState, useMemo } from 'react';
+import { RowItem, SectionTable } from '@/components/SectionTable';
+import { BoxIcon, CloseIcon, CreditCardIcon, ExportIcon, EyeIcon, TruckIcon, UserIcon } from '@/icons';
+import { Order, OrderEvent, OrderState } from '@/types';
+import { useParams } from 'next/navigation';
+import React, { useState, useMemo, useEffect } from 'react';
 
-// --- Types (Based on Prisma Schema) ---
-export enum OrderState {
-  PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
-  SHIPPED = 'SHIPPED',
-  FINISHED = 'FINISHED',
-  CANCELLED = 'CANCELLED',
-  STUCK = 'STUCK',
-  REFUNDED = 'REFUNDED',
-}
-
-export enum Currency {
-  USD = 'USD',
-  VES = 'VES',
-}
-
-export type OrderEvent = {
-  id: number;
-  state: OrderState;
-  notes: string[]; // Format: [ISODateUTC]"reason"
-  createdAt: string;
-};
-
-export type OrderItem = {
-  id: number;
-  quantity: number;
-  priceAtPurchase: number;
-  currencyAtPurchase: Currency;
-  nameAtPurchase: string;
-  descriptionAtPurchase: string | null;
-  skuAtPurchase: string | null;
-};
-
-export type Order = {
-  id: number;
-  state: OrderState;
-  trackingToken: string;
-  totalAmount: number;
-  createdAt: string;
-  updatedAt: string;
-
-  // Customer
-  customer_firstName: string;
-  customer_lastName: string;
-  customer_whatsapp_number: string;
-  customer_identification_number: string;
-  customer_email: string | null;
-  customer_address: string | null;
-
-  // Shipping
-  originFields: any | null;
-  shipping_country: string;
-  shipping_city: string;
-  shipping_zipCode: string;
-  shipping_name_at_purchase: string;
-  shipping_description_at_purchase: string | null;
-  shipping_provider_at_purchase: string;
-  shipping_fields_at_purchase: any;
-  shipping_fields_response: any;
-
-  // Payment
-  payment_name_at_purchase: string;
-  payment_description_at_purchase: string | null;
-  payment_provider_at_purchase: string;
-  payment_fields_at_purchase: any;
-  payment_fields_response: any;
-
-  items: OrderItem[];
-  orderEvents: OrderEvent[];
-};
-
-// --- Mock Data ---
-const MOCK_ORDERS: Order[] = [
-  {
-    id: 1001,
-    state: OrderState.PENDING,
-    trackingToken: 'uuid-1234-abcd',
-    totalAmount: 129.99,
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    customer_firstName: 'John',
-    customer_lastName: 'Doe',
-    customer_whatsapp_number: '+1234567890',
-    customer_identification_number: 'V-12345678',
-    customer_email: 'john.doe@example.com',
-    customer_address: '123 Main St, Apt 4B',
-    originFields: null,
-    shipping_country: 'Venezuela',
-    shipping_city: 'Mérida',
-    shipping_zipCode: '5101',
-    shipping_name_at_purchase: 'Standard Delivery',
-    shipping_description_at_purchase: '3-5 business days',
-    shipping_provider_at_purchase: 'MRW',
-    shipping_fields_at_purchase: { "Destination Agency": "Enter agency code" },
-    shipping_fields_response: { "Destination Agency": "MRW-5101-CENTRAL" },
-    payment_name_at_purchase: 'Zelle Transfer',
-    payment_description_at_purchase: null,
-    payment_provider_at_purchase: 'Zelle',
-    payment_fields_at_purchase: { "Confirmation Ref": "Enter reference number" },
-    payment_fields_response: { "Confirmation Ref": "192837465" },
-    items: [
-      { id: 1, quantity: 1, priceAtPurchase: 129.99, currencyAtPurchase: Currency.USD, nameAtPurchase: 'Smart Coffee Maker', descriptionAtPurchase: 'Brew coffee from your phone.', skuAtPurchase: 'SCM-22' }
-    ],
-    orderEvents: [
-      { id: 1, state: OrderState.PENDING, notes: [`[${new Date().toISOString()}] "Order created by user"`], createdAt: new Date(Date.now() - 86400000).toISOString() }
-    ]
-  },
-  {
-    id: 1002,
-    state: OrderState.STUCK,
-    trackingToken: 'uuid-5678-efgh',
-    totalAmount: 45.00,
-    createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-    updatedAt: new Date(Date.now() - 172800000).toISOString(),
-    customer_firstName: 'Maria',
-    customer_lastName: 'Gonzalez',
-    customer_whatsapp_number: '+0987654321',
-    customer_identification_number: 'V-87654321',
-    customer_email: 'maria.g@example.com',
-    customer_address: 'Av. Las Americas, Edif. El Sol',
-    originFields: { "warehouse": "Mérida Norte" },
-    shipping_country: 'Venezuela',
-    shipping_city: 'Caracas',
-    shipping_zipCode: '1010',
-    shipping_name_at_purchase: 'Express Shipping',
-    shipping_description_at_purchase: 'Next day delivery',
-    shipping_provider_at_purchase: 'Zoom',
-    shipping_fields_at_purchase: { "Home Delivery": "Provide exact instructions" },
-    shipping_fields_response: { "Home Delivery": "Leave at the front desk" },
-    payment_name_at_purchase: 'Pago Movil',
-    payment_description_at_purchase: 'Interbank mobile payment',
-    payment_provider_at_purchase: 'Mercantil',
-    payment_fields_at_purchase: { "Phone": "Your registered phone", "Ref": "Last 4 digits" },
-    payment_fields_response: { "Phone": "04141234567", "Ref": "4567" },
-    items: [
-      { id: 2, quantity: 2, priceAtPurchase: 22.50, currencyAtPurchase: Currency.USD, nameAtPurchase: 'Cotton T-Shirt', descriptionAtPurchase: 'Basic tee.', skuAtPurchase: 'TS-BLK-M' }
-    ],
-    orderEvents: [
-      { id: 2, state: OrderState.PENDING, notes: [], createdAt: new Date(Date.now() - 259200000).toISOString() },
-      { id: 3, state: OrderState.PROCESSING, notes: [`[${new Date().toISOString()}] "Payment verified"`], createdAt: new Date(Date.now() - 200000000).toISOString() },
-      { id: 4, state: OrderState.STUCK, notes: [`[${new Date().toISOString()}] "Zoom agency closed due to power outage. Retrying tomorrow."`], createdAt: new Date(Date.now() - 172800000).toISOString() }
-    ]
-  },
-  {
-    id: 1003,
-    state: OrderState.SHIPPED,
-    trackingToken: 'uuid-9012-ijkl',
-    totalAmount: 199.99,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    customer_firstName: 'Carlos',
-    customer_lastName: 'Perez',
-    customer_whatsapp_number: '+1122334455',
-    customer_identification_number: 'E-11223344',
-    customer_email: null,
-    customer_address: null,
-    originFields: null,
-    shipping_country: 'Venezuela',
-    shipping_city: 'Valencia',
-    shipping_zipCode: '2001',
-    shipping_name_at_purchase: 'Pickup',
-    shipping_description_at_purchase: 'Pickup at store',
-    shipping_provider_at_purchase: 'Internal',
-    shipping_fields_at_purchase: {},
-    shipping_fields_response: {},
-    payment_name_at_purchase: 'Cash',
-    payment_description_at_purchase: 'Pay at store',
-    payment_provider_at_purchase: 'Physical',
-    payment_fields_at_purchase: {},
-    payment_fields_response: {},
-    items: [
-      { id: 3, quantity: 1, priceAtPurchase: 199.99, currencyAtPurchase: Currency.USD, nameAtPurchase: 'Wireless Headphones', descriptionAtPurchase: null, skuAtPurchase: 'WH-001' }
-    ],
-    orderEvents: [
-      { id: 5, state: OrderState.PENDING, notes: [], createdAt: new Date().toISOString() },
-      { id: 6, state: OrderState.SHIPPED, notes: [`[${new Date().toISOString()}] "Customer picked up the item at branch A"`], createdAt: new Date().toISOString() }
-    ]
-  }
-];
 
 // --- Utilities ---
 const getStateColors = (state: OrderState) => {
@@ -207,66 +33,60 @@ const parseNote = (noteStr: string) => {
   return { date: null, reason: noteStr };
 };
 
-// --- Icons ---
-const EyeIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
-const ExportIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
-const CloseIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
-const UserIcon = () => <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
-const TruckIcon = () => <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>;
-const CreditCardIcon = () => <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>;
-const BoxIcon = () => <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
-
 
 // --- Main Component ---
 export default function OrderManagement() {
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const params = useParams()
+  const companyId = params.id
+
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // Filters
   const [filterState, setFilterState] = useState<string>('');
   const [dateStart, setDateStart] = useState<string>('');
   const [dateEnd, setDateEnd] = useState<string>('');
-  
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   // Modals
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [stateOrder, setStateOrder] = useState<Order | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  // Derived Data
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      const matchState = filterState === '' || order.state === filterState;
-      const orderDate = new Date(order.createdAt).getTime();
-      const matchStart = dateStart ? orderDate >= new Date(dateStart).getTime() : true;
-      const matchEnd = dateEnd ? orderDate <= new Date(dateEnd).getTime() + 86400000 : true; // +1 day to include end of day
-      return matchState && matchStart && matchEnd;
-    });
-  }, [orders, filterState, dateStart, dateEnd]);
+  useEffect(()=>{
+    fetchData()
+  }, [filterState, dateStart, dateEnd])
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const fetchData = async() => {
+    const ordersResult = await getOrders(Number(companyId), { state: filterState, from: dateStart, to: dateEnd })
+    setOrders(ordersResult)
+  }
 
-  const handleUpdateState = (orderId: number, newState: OrderState, newNote: string) => {
-    console.log(`Update Order ${orderId} to ${newState} with note: ${newNote}`);
-    
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId) {
-        const formattedNote = newNote ? `[${new Date().toISOString()}] "${newNote}"` : null;
-        const newEvent: OrderEvent = {
-          id: Date.now(),
-          state: newState,
-          notes: formattedNote ? [formattedNote] : [],
-          createdAt: new Date().toISOString()
-        };
-        return { ...o, state: newState, orderEvents: [...o.orderEvents, newEvent] };
-      }
-      return o;
-    }));
+  const handleUpdateState = async(orderId: number, newState: OrderState, newNote: string) => {
+    await updateOrder(orderId, { state: newState, notes: newNote })
+    await fetchData()
     setStateOrder(null);
   };
+
+    const getRowItems = () => {
+      if(orders.length === 0) return []
+      const rows: RowItem[] = []
+
+      for(let i = 0; i<orders.length; i++) {
+        rows.push(
+          { 
+            id: orders[i].id, 
+            disabled: false, 
+            cells: [
+              { type: "string", value: orders[i].id.toString() }, 
+              { type: "string", value: orders[i].createdAt }, 
+              { type: "titleAndSubtitle", title: orders[i].customer_firstName + " " + orders[i].customer_lastName, subtitle: orders[i].customer_email || "" }, 
+              { type: "string", value: orders[i].totalAmount.toString() }, 
+              { type: "coloredButton", label: orders[i].state, class: getStateColors(orders[i].state), action: () => setStateOrder(orders[i]) }, 
+            ] 
+          }
+        )
+      }
+      return rows
+    }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-8 font-sans transition-colors duration-200">
@@ -277,89 +97,28 @@ export default function OrderManagement() {
           searchBars={[]}
           dropdownAllSelectedLabel='Todos'
           dropdowns={[
-            { title:"Filtrar por estados", items: Object.values(OrderState).map(state => ({ label:state, value:state })), value: filterState, handleChangeValue: (e) => { setFilterState(e.target.value); setCurrentPage(1); } }
+            { title:"Filtrar por estados", items: Object.values(OrderState).map(state => ({ label:state, value:state })), value: filterState, handleChangeValue: (e) => { setFilterState(e.target.value); } }
           ]}
           datePickers={[
-            { date: dateStart, handleChangeDate: (e) => { setDateStart(e.target.value); setCurrentPage(1); }, title: "Desde" },
-            { date: dateEnd, handleChangeDate: (e) => { setDateEnd(e.target.value); setCurrentPage(1); }, title: "Hasta" },
+            { date: dateStart, handleChangeDate: (e) => { setDateStart(e.target.value); }, title: "Desde" },
+            { date: dateEnd, handleChangeDate: (e) => { setDateEnd(e.target.value); }, title: "Hasta" },
           ]}
         />
       
-
-        {/* Table Area */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                  <th className="p-4 font-medium">Order ID</th>
-                  <th className="p-4 font-medium">Date</th>
-                  <th className="p-4 font-medium">Customer</th>
-                  <th className="p-4 font-medium">Total</th>
-                  <th className="p-4 font-medium">State</th>
-                  <th className="p-4 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                {paginatedOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                      No orders found matching your criteria.
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                      <td className="p-4 font-medium text-gray-900 dark:text-white">
-                        #{order.id}
-                      </td>
-                      <td className="p-4 text-gray-500 dark:text-gray-400">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-4">
-                        <div className="text-gray-900 dark:text-white font-medium">{order.customer_firstName} {order.customer_lastName}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{order.customer_identification_number}</div>
-                      </td>
-                      <td className="p-4 font-medium text-gray-900 dark:text-white">
-                        ${order.totalAmount.toFixed(2)}
-                      </td>
-                      <td className="p-4">
-                        <button 
-                          onClick={() => setStateOrder(order)}
-                          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide border cursor-pointer hover:shadow-md transition-all ${getStateColors(order.state)}`}
-                          title="Click to change state"
-                        >
-                          {order.state}
-                        </button>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button
-                          onClick={() => setViewOrder(order)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
-                        >
-                          <EyeIcon /> Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        <SectionTable 
+          columns={[
+            { label: "Order Id", key: "key" },
+            { label: "Date", key: "key" },
+            { label: "Customer", key: "key" },
+            { label: "Total", key: "key" },
+            { label: "State", key: "key" },
+          ]}
+          rows={getRowItems()}
+          actions={[
+            { icon: "eye", label:"detalles", handleClick: (id:string|number) => { const order = orders.find(o => o.id == id); setViewOrder(order||null) } }
+          ]}
           
-          {/* Pagination UI */}
-          {totalPages > 1 && (
-             <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-               <span className="text-sm text-gray-600 dark:text-gray-400">
-                 Page {currentPage} of {totalPages}
-               </span>
-               <div className="flex gap-2">
-                 <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 disabled:opacity-50 text-sm">Prev</button>
-                 <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 disabled:opacity-50 text-sm">Next</button>
-               </div>
-             </div>
-          )}
-        </div>
+        />
       </div>
 
       {/* --- Modals --- */}
@@ -439,7 +198,7 @@ function OrderDetailModal({ order, onClose }: { order: Order; onClose: () => voi
               </div>
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <p><span className="font-medium text-gray-900 dark:text-white">Method:</span> {order.payment_provider_at_purchase} - {order.payment_name_at_purchase}</p>
-                <p><span className="font-medium text-gray-900 dark:text-white">Total Amount:</span> ${order.totalAmount.toFixed(2)}</p>
+                <p><span className="font-medium text-gray-900 dark:text-white">Total Amount:</span> ${order.totalAmount}</p>
                 
                 {Object.entries(order.payment_fields_response || {}).length > 0 && (
                   <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
@@ -487,7 +246,7 @@ function OrderDetailModal({ order, onClose }: { order: Order; onClose: () => voi
                 <tfoot className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
                     <td colSpan={4} className="p-4 text-right font-bold text-gray-700 dark:text-gray-300">Total:</td>
-                    <td className="p-4 text-right font-bold text-lg text-gray-900 dark:text-white">${order.totalAmount.toFixed(2)}</td>
+                    <td className="p-4 text-right font-bold text-lg text-gray-900 dark:text-white">${order.totalAmount}</td>
                   </tr>
                 </tfoot>
               </table>

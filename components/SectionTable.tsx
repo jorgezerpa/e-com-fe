@@ -1,13 +1,13 @@
 'use client';
 import { COLOR_PRESETS } from '@/constants';
-import { DisableIcon, EditIcon, TrashIcon } from '@/icons';
+import { DisableIcon, EditIcon, EyeIcon, TrashIcon } from '@/icons';
 import { Category } from '@/types';
 import { MouseEventHandler, ReactElement, useEffect } from 'react';
 
 interface ActionButton {
   handleClick: (id:string|number) => void
   label: string
-  icon: "edit"|"delete"|"disable" 
+  icon: "edit"|"delete"|"disable"|"eye" 
 }
 
 // Discriminated Union Pattern
@@ -16,6 +16,8 @@ type TableCells =
   | { type: 'image'; value: string }
   | { type: 'titleAndSubtitle'; title: string; subtitle: string }
   | { type: 'coloredTag'; tags: Category[] }
+  | { type: 'coloredText'; label: string; class: string }
+  | { type: 'coloredButton'; label: string; class: string, action:()=>void }
 
 
 export interface RowItem extends Record<string, any> {
@@ -51,7 +53,7 @@ export function SectionTable({ columns, rows, actions }:Params) {
           {rows.length === 0 ? (
             <tr>
               <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                No hay productos. Crea uno nuevo o ajusta los filtros
+                No hay resultados. Crea un item nuevo o ajusta los filtros
               </td>
             </tr>
           ) : (
@@ -123,6 +125,30 @@ export function SectionTable({ columns, rows, actions }:Params) {
                               </div>
                             </>
                         }
+                        {
+                          cell.type === "coloredText" && 
+                            <>
+                              <div className="flex flex-wrap gap-1.5">
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${cell.class}`}
+                                >
+                                  {cell.label}
+                                </span>
+                              </div>
+                            </>
+                        }
+                        {
+                          cell.type === "coloredButton" && 
+                            <>
+                              <div className="flex flex-wrap gap-1.5 cursor-pointer" onClick={cell.action}>
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${cell.class}`}
+                                >
+                                  {cell.label}
+                                </span>
+                              </div>
+                            </>
+                        }
                       </td>
                     )
                   })
@@ -140,6 +166,7 @@ export function SectionTable({ columns, rows, actions }:Params) {
                           { action.icon === "disable" && <DisableIcon />}
                           { action.icon === "edit" && <EditIcon />}
                           { action.icon === "delete" && <TrashIcon />}
+                          { action.icon === "eye" && <EyeIcon />}
                         </button>
                       ))
                     }

@@ -1,5 +1,10 @@
 'use client'
 import React, { useState, useMemo } from 'react';
+import { HeroRegistry } from './sections/heroes';
+import { NavRegistry } from './sections/nav';
+import { CardRegistry, MOCK_PRODS } from './sections/cards';
+import { FooterRegistry } from './sections/footer';
+import { ListLayoutRegistry } from './sections/ListLayout';
 
 // ==========================================
 // --- 1. Types & Configuration Schema ---
@@ -29,135 +34,6 @@ type DesignOption = {
   name: string;
   description: string;
   thumbnailJSX: React.ReactNode; // A tiny micro-preview for the sidebar button
-};
-
-// ==========================================
-// --- 2. The Component Registries ---
-// These define the actual UI variations
-// ==========================================
-
-// --- HELPER: Mock Data for Preview ---
-const MOCK_CATS = ['All', 'Electronics', 'Home', 'Fashion', 'Wellness'];
-const MOCK_PRODS = [
-  { id: 1, name: 'Minimalist Watch', price: 149, img: 'https://images.pexels.com/photos/277390/pexels-photo-277390.jpeg?auto=compress&cs=tinysrgb&w=300' },
-  { id: 2, name: 'Leather Backpack', price: 89, img: 'https://images.pexels.com/photos/2905238/pexels-photo-2905238.jpeg?auto=compress&cs=tinysrgb&w=300' },
-  { id: 3, name: 'Wireless Earbuds', price: 199, img: 'https://images.pexels.com/photos/3780681/pexels-photo-3780681.jpeg?auto=compress&cs=tinysrgb&w=300' },
-  { id: 4, name: 'Ergonomic Chair', price: 350, img: 'https://images.pexels.com/photos/373912/pexels-photo-373912.jpeg?auto=compress&cs=tinysrgb&w=300' },
-];
-
-// 2a. HERO Section Variations
-const HeroRegistry: Record<string, React.FC> = {
-  hero_v1: () => (
-    <div className="bg-[var(--primary-color)] text-white p-12 md:p-20 text-center rounded-2xl">
-      <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Summer Collection '24</h1>
-      <p className="mt-4 text-lg opacity-90 max-w-2xl mx-auto">Discover the hottest trends in minimal design and sustainable materials.</p>
-      <button className="mt-8 px-6 py-3 bg-[var(--accent-color)] text-[var(--primary-color)] rounded-full font-bold text-sm shadow-lg hover:scale-105 transition-transform">Shop Now</button>
-    </div>
-  ),
-  hero_v2: () => (
-    <div className="grid md:grid-cols-2 gap-8 items-center bg-white p-10 rounded-2xl border border-gray-100">
-      <div>
-        <span className="inline-block px-3 py-1 bg-[var(--secondary-color)] text-[var(--primary-color)] rounded-full text-xs font-bold mb-3">New Arrival</span>
-        <h1 className="text-4xl font-bold text-gray-900 leading-tight">The Modern <span className="text-[var(--primary-color)]">Audio Experience</span></h1>
-        <p className="mt-4 text-gray-600">Premium sound, uncompromised comfort. Available in 3 colors.</p>
-        <button className="mt-6 px-8 py-3 bg-[var(--primary-color)] text-white rounded-lg font-semibold text-sm">Pre-Order</button>
-      </div>
-      <img src="https://images.pexels.com/photos/3394651/pexels-photo-3394651.jpeg?auto=compress&cs=tinysrgb&w=400" alt="hero" className="rounded-xl shadow-xl aspect-video object-cover" />
-    </div>
-  ),
-};
-
-// 2b. Navigation / Categories Selector variations
-const NavRegistry: Record<string, React.FC> = {
-  nav_pills: () => (
-    <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
-        {MOCK_CATS.map((c, i) => (
-          <button key={c} className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${i === 0 ? 'bg-[var(--primary-color)] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-            {c}
-          </button>
-        ))}
-      </div>
-      <div className="relative w-full md:w-64">
-        <input type="search" placeholder="Search products..." className="w-full pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-[var(--primary-color)] outline-none" />
-        <svg className="absolute right-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-      </div>
-    </div>
-  ),
-  nav_underline: () => (
-    <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-       <div className="flex gap-6 border-b border-gray-200 mb-4 overflow-x-auto no-scrollbar">
-        {MOCK_CATS.map((c, i) => (
-          <button key={c} className={`pb-3 text-sm font-medium whitespace-nowrap ${i === 0 ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-gray-600 hover:text-gray-900'}`}>
-            {c}
-          </button>
-        ))}
-      </div>
-      <input type="search" placeholder="Search product name or SKU..." className="w-full p-3 border border-gray-200 rounded-lg text-sm bg-gray-50" />
-    </div>
-  )
-};
-
-// 2c. Card Styles (We pass data here rather than fully dynamic components)
-const CardRegistry: Record<string, React.FC<{product: typeof MOCK_PRODS[0]}>> = {
-  card_basic: ({ product }) => (
-    <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
-      <img src={product.img} alt={product.name} className="w-full h-48 object-cover" />
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-800 truncate group-hover:text-[var(--primary-color)]">{product.name}</h3>
-        <div className="flex justify-between items-center mt-3">
-          <span className="text-xl font-bold text-gray-900">${product.price}</span>
-          <button className="p-2 bg-[var(--secondary-color)] text-[var(--primary-color)] rounded-full hover:bg-[var(--primary-color)] hover:text-white transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  ),
-  card_minimal: ({ product }) => (
-    <div className="text-center group">
-      <div className="relative overflow-hidden rounded-xl aspect-square mb-3">
-        <img src={product.img} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
-           <button className="w-full py-2.5 bg-white text-gray-900 rounded-lg font-bold text-sm shadow-xl">View Product</button>
-        </div>
-      </div>
-      <h3 className="text-sm text-gray-700 truncate">{product.name}</h3>
-      <span className="font-bold text-gray-950">${product.price}</span>
-    </div>
-  )
-};
-
-// 2d. List Distribution (Grid settings)
-const ListLayoutRegistry: Record<string, string> = {
-  grid_4: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  grid_3_large: "grid grid-cols-1 md:grid-cols-3 gap-8",
-};
-
-// 2e. Footer Variations
-const FooterRegistry: Record<string, React.FC> = {
-  foot_simple: () => (
-    <footer className="mt-16 py-10 px-6 border-t border-gray-100 bg-white rounded-t-2xl text-center text-sm text-gray-500">
-      <p>&copy; 2024 My Awesone Store powered by OmniCart Labs.</p>
-      <div className="mt-2 flex gap-4 justify-center"><span>Privacy</span><span>Terms</span><span>Contact</span></div>
-    </footer>
-  ),
-  foot_brand: () => (
-    <footer className="mt-16 py-12 px-8 bg-gray-950 text-gray-300 rounded-t-2xl grid md:grid-cols-3 gap-8 text-sm">
-      <div className="space-y-3">
-        <div className="font-bold text-xl text-white">LOGO</div>
-        <p>Your premium source for curated goods.</p>
-      </div>
-      <div className="flex flex-col gap-2">
-        <span className="font-bold text-white mb-1">Shop</span>
-        <span>New Arrivals</span><span>Best Sellers</span><span>Sale</span>
-      </div>
-      <div className="space-y-2">
-        <span className="font-bold text-white mb-1">Newsletter</span>
-        <input type="email" placeholder="you@email.com" className="w-full p-2.5 rounded bg-gray-800 text-white border border-gray-700" />
-      </div>
-    </footer>
-  )
 };
 
 // ==========================================
@@ -242,7 +118,7 @@ export default function StorefrontEditor() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col font-sans transition-colors duration-200">
       {/* Editor Header */}
-      <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex justify-between items-center shadow-sm">
+      <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 flex justify-between items-center shadow-sm h-20">
         <div className='flex items-center gap-3'>
             <div className='p-2 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-lg font-black text-xl'>Ø</div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Storefront Visual Editor</h1>
@@ -258,7 +134,8 @@ export default function StorefrontEditor() {
       <div className="flex flex-1 overflow-hidden">
         
         {/* --- LEFT SIDEBAR (Controls) --- */}
-        <aside className="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col shrink-0 overflow-y-auto no-scrollbar">
+        <div className='w-80'></div>
+        <aside className="fixed top-20 left-0 bottom-0 w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col shrink-0 overflow-y-auto no-scrollbar">
           
           {/* Internal Sidebar Tabs */}
           <div className="flex border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
@@ -373,10 +250,10 @@ export default function StorefrontEditor() {
 
                 {/* 3. Dynamic Product Grid & Cards */}
                 <div className="space-y-6">
-                    <div className='flex justify-between items-center'>
+                    {/* <div className='flex justify-between items-center'>
                         <h2 className='text-2xl font-bold tracking-tight'>Featured Products</h2>
                         <span className='text-sm font-medium text-[var(--accent-color)] cursor-pointer'>View All →</span>
-                    </div>
+                    </div> */}
                     <div className={gridClasses}>
                         {MOCK_PRODS.map(product => (
                             <CardComp key={product.id} product={product} />

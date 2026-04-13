@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SectionHeader } from '@/components/SectionHeader';
 import { CreateCompany, createCompany, getCompanies } from '@/apiHandlers/companies';
+import { Navbar } from '@/components/Navbar';
 
 // --- Types ---
 interface Company {

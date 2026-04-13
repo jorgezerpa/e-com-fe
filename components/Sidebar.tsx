@@ -33,8 +33,8 @@ export const navItemsMainAdmin = [
   { id: 'payment-methods', label: 'Metodos de Pago', desc: 'Administra tus metodos de pago' },
   { id: 'shipment-methods', label: 'metodos de envio', desc: 'Administra tus metodos de envio' },
   { id: 'orders', label: 'ordenes', desc: 'Administra tus ordenes y pedidos' },
-  { id: 'billing', label: 'facturacion', desc: 'Administra tu facturacion y subscripcion' },
-  { id: 'store', label: 'Tienda', desc: 'Personaliza el aspecto de tu tienda' },
+  // { id: 'billing', label: 'facturacion', desc: 'Administra tu facturacion y subscripcion' },
+  // { id: 'store', label: 'Tienda', desc: 'Personaliza el aspecto de tu tienda' },
 ];
 
 export function Sidebar({ activeItem = 'products'}: { activeItem?: string}) {
@@ -98,7 +98,7 @@ export function Sidebar({ activeItem = 'products'}: { activeItem?: string}) {
       <div className="p-6 relative" ref={dropdownRef}>
           <>
             <button 
-              onClick={() => router.push("/companies")}
+              onClick={() => router.push("/dashboard")}
               className="cursor-pointer w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-green-500/50 transition-all group"
             >
               <div className="flex items-center gap-3 overflow-hidden">

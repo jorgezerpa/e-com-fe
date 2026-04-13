@@ -36,7 +36,7 @@ export default function ManagerAuth() {
       }
 
       // if valid role, redirect to manager dashboard
-      router.push('/companies');      
+      router.push('/dashboard');      
     }, [router]);
 
     
@@ -87,7 +87,7 @@ export default function ManagerAuth() {
           })
           await loginUser({ email, password })
         }
-        router.push('/companies')
+        router.push('/dashboard')
       } catch (error: any) {
         setIsLoading(false)
         setToast({ 

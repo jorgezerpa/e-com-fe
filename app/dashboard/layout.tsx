@@ -1,6 +1,7 @@
 'use client'
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { Navbar } from '@/components/Navbar';
 
 export default function AdminLayout({
   children,
@@ -19,7 +20,8 @@ export default function AdminLayout({
 
   return (
     <main className="flex-1 relative overflow-y-auto focus:outline-none scrollbar-hide">
-      <div className="sm:px-6 md:px-8 max-w-7xl mx-auto">
+      <Navbar />
+      <div className="">
         {children}
       </div>
     </main>      

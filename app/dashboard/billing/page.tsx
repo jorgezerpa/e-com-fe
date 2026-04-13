@@ -1,4 +1,5 @@
 'use client'
+import { Navbar } from '@/components/Navbar';
 import React from 'react';
 
 // Icons placeholders
@@ -7,8 +8,8 @@ const HistoryIcon = () => <div className="w-6 h-6 bg-gray-200 rounded-full" />;
 
 export default function BillingDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen dark:bg-gray-900">
+      <div className="mx-auto space-y-8">
         
         {/* Header */}
         <div>

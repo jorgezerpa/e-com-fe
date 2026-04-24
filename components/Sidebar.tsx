@@ -98,7 +98,7 @@ export function Sidebar({ activeItem = 'products'}: { activeItem?: string}) {
       <div className="p-6 relative" ref={dropdownRef}>
           <>
             <button 
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/dashboard/stores")}
               className="cursor-pointer w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-green-500/50 transition-all group"
             >
               <div className="flex items-center gap-3 overflow-hidden">

@@ -17,7 +17,8 @@ export interface CreateProduct {
   sku: string
   stock: number
   companyId: number
-  categoryIds: number[]
+  categoryIds: number[],
+  images: { url: string }[]
 }
 
 export interface UpdateProduct {
@@ -27,8 +28,8 @@ export interface UpdateProduct {
   sku?: string
   stock?: number
   disabled?: boolean
+  images?: { id: number|null, url: string }[]
 }
-
 
 
 export const getProducts = async (companyId: number, { productId, searchString, categories }:{ productId?: number, searchString?: string, categories?:number[] }) => {

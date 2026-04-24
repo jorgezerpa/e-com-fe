@@ -91,7 +91,7 @@ export default function ManagerAuth() {
       } catch (error: any) {
         setIsLoading(false)
         setToast({ 
-          message: error?.message || 'Authentication failed. Please check your credentials.', 
+          message: error?.message || 'Error. Intenta de nuevo.', 
           type: 'error' 
         })
       }

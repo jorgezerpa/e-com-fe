@@ -1,4 +1,11 @@
 'use client'
+// todo
+// - add categories assignation on product creation/deletion modal
+// - close modal when click save
+// - implement default payment methods cards and ui logic
+// - implement default shipment methods cards and ui logic
+// - create 1 UI for the store client's view. -> and add section on dashboard to handle it and get the link
+// - implement subscription logic
 import { getCategories } from '@/apiHandlers/categories';
 import { CreateProduct, createProduct, deleteProduct, getProducts, UpdateProduct, updateProduct } from '@/apiHandlers/products';
 import { ProductModal } from '@/components/products/ProductCreateEditModal';
@@ -10,6 +17,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Product } from '@/types';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase'; 
 
 // --- Main Component ---
 export default function ProductManagement() {
@@ -32,6 +40,11 @@ export default function ProductManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  // Delete Confirmation States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Simulated Fetch
   const fetchProducts = async () => {
@@ -85,18 +98,45 @@ export default function ProductManagement() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async(productId: string|number) => {
-    setLoading(true);
+  const handleDelete = (productId: string | number) => {
+    const product = products.find((p) => p.id == productId);
+    if (!product) return;
+    setProductToDelete(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  // 2. Perform Deletion
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
     setError(null);
+
     try {
-      // @todo add a confirm modal first 
-      await deleteProduct(productId as number)
-      await fetchProducts()
+      // A. Delete Images from Supabase Storage
+      if (productToDelete.images && productToDelete.images.length > 0) {
+        const bucket = process.env.NEXT_PUBLIC_SUPABASE_PRODUCTS_BUCKET as string;
+        const pathsToDelete = productToDelete.images.map(img => {
+          const parts = img.url.split(`/${bucket}/`);
+          return parts.length > 1 ? parts[1] : null;
+        }).filter(Boolean) as string[];
+
+        if (pathsToDelete.length > 0) {
+          const { error: storageError } = await supabase.storage.from(bucket).remove(pathsToDelete);
+          if (storageError) console.error("Storage cleanup error:", storageError);
+        }
+      }
+
+      // B. Delete Product from DB via API
+      await deleteProduct(productToDelete.id);
+      
+      // C. Refresh
+      await fetchProducts();
+      setIsDeleteModalOpen(false);
+      setProductToDelete(null);
     } catch (error) {
-      setError('Failed to delete product. Please try again.');
-    }
-    finally {
-      setLoading(false)
+      setError('Failed to delete product.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -230,6 +270,33 @@ export default function ProductManagement() {
           </div>
         )}
       </div>
+
+      {/* --- Delete Confirmation Modal --- */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Delete Product</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              Are you sure you want to delete <strong>{productToDelete?.name}</strong>? This will also remove all associated images. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)} 
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- Modal Form --- */}
       {isModalOpen && (

@@ -29,6 +29,7 @@ export interface UpdateProduct {
   stock?: number
   disabled?: boolean
   images?: { id: number|null, url: string }[]
+  deletedImageIds?: number[] // Added this field
 }
 
 

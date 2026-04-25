@@ -1,4 +1,4 @@
-import { CategoryColorsPreset } from "@/types";
+
 
   export const COLOR_PRESETS = {
     'BLUE' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',

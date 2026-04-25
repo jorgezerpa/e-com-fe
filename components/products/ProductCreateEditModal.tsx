@@ -1,9 +1,11 @@
 import { CreateProduct, UpdateProduct } from "@/apiHandlers/products";
+import { getCategories } from "@/apiHandlers/categories"; // <-- Added import
 import { CloseIcon, ExternalLinkIcon, GripIcon, TrashIcon } from "@/icons";
-import { Product, ProductImage } from "@/types";
+import { Category, Product, ProductImage } from "@/types";
 import { useParams } from "next/navigation";
 import { DragEvent, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { COLOR_PRESETS } from "@/constants";
 
 type UIAsset = {
   id: string | number;
@@ -37,6 +39,16 @@ export function ProductModal({
     stock: product?.stock || 0,
   });
 
+  // --- Category State ---
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  
+  // Initialize with existing categories if editing
+  // Note: Adjust 'product?.categoryIds' below based on how your Product type stores relations
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(
+    (product as any)?.categoryIds || [] 
+  );
+
   const [images, setImages] = useState<UIAsset[]>(() => {
     return (product?.images || []).map((img) => ({
       id: img.id,
@@ -45,15 +57,30 @@ export function ProductModal({
     }));
   });
 
-  // Track images staged for deletion (already uploaded images)
   const [imagesToDelete, setImagesToDelete] = useState<UIAsset[]>([]);
-  
-  // Track which image is currently triggering the confirmation modal
   const [imageToDeleteConfirm, setImageToDeleteConfirm] = useState<UIAsset | null>(null);
-
-  // Warning state for partial uploads
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+
+  // --- Fetch Categories Effect ---
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!companyId) return;
+      try {
+        setIsLoadingCategories(true);
+        const data = await getCategories(Number(companyId));
+        setCategories(data);
+      } catch (err) {
+        console.error("Failed to fetch categories:", err);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+    setSelectedCategoryIds((product?.categories||[]).map(c => c.id))
+  }, [companyId]);
 
   useEffect(() => {
     return () => {
@@ -63,8 +90,6 @@ export function ProductModal({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -105,25 +130,29 @@ export function ProductModal({
     setDraggedIdx(null);
   };
 
-  // --- Modified Delete Flow ---
   const handleDeleteRequest = (img: UIAsset) => {
     if (img.isNew) {
-      // Local preview: Delete immediately and clear memory
       setImages((prev) => prev.filter((i) => i.id !== img.id));
       URL.revokeObjectURL(img.url);
     } else {
-      // Existing remote image: Trigger confirmation modal
       setImageToDeleteConfirm(img);
     }
   };
 
   const confirmDeleteImage = () => {
     if (!imageToDeleteConfirm) return;
-    
-    // Move from active images to staged for deletion
     setImages((prev) => prev.filter((i) => i.id !== imageToDeleteConfirm.id));
     setImagesToDelete((prev) => [...prev, imageToDeleteConfirm]);
-    setImageToDeleteConfirm(null); // close confirmation
+    setImageToDeleteConfirm(null);
+  };
+
+  // --- Category Toggle Handler ---
+  const toggleCategory = (categoryId: number) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId) // Remove if already selected
+        : [...prev, categoryId]                  // Add if not selected
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,11 +161,9 @@ export function ProductModal({
     setUploadWarning(null);
 
     try {
-      // 1. Delete confirmed files from Supabase Storage first
       if (imagesToDelete.length > 0) {
         const bucket = process.env.NEXT_PUBLIC_SUPABASE_PRODUCTS_BUCKET as string;
         
-        // Extract the path from the public URL (e.g. "companyId/filename.jpg")
         const pathsToDelete = imagesToDelete.map(img => {
           const parts = img.url.split(`/${bucket}/`);
           return parts.length > 1 ? parts[1] : null;
@@ -151,7 +178,6 @@ export function ProductModal({
         }
       }
 
-      // 2. Upload new files to Supabase Storage
       const newFiles = images.filter((img) => img.isNew && img.file);
       
       const uploadResults = await Promise.all(
@@ -169,7 +195,7 @@ export function ProductModal({
 
           if (uploadError) {
             console.error('Upload Error for', img.file.name, uploadError);
-            return null; // Return null to signify failure for this specific image
+            return null;
           }
 
           const { data: urlData } = supabase.storage
@@ -183,13 +209,11 @@ export function ProductModal({
         })
       );
 
-      // Check for partial upload failures
       const successfulUploads = uploadResults.filter(Boolean);
       if (newFiles.length > 0 && successfulUploads.length < newFiles.length) {
         setUploadWarning("Hey, not all images could be uploaded. Missing images were removed from the final save.");
       }
 
-      // 3. Map final payload
       const finalImagePayload = images.map((img) => {
         if (img.isNew) {
           const uploaded = uploadResults.find((r) => r?.originalId === img.id);
@@ -204,15 +228,14 @@ export function ProductModal({
         ...formData,
         companyId: Number(companyId),
         images: finalImagePayloadCleared,
-        categoryIds: []
+        categoryIds: selectedCategoryIds // <-- Injected active selection here
       };
 
-      // 4. Trigger API actions
       if (isEditing) {
         await onUpdate(product.id, {
           ...finalPayload,
           images: finalPayload.images.map(i => ({ id: i.id as number | null, url: i.url || "" })),
-          deletedImageIds: imagesToDelete.map(img => Number(img.id)) // Pass IDs to delete in DB
+          deletedImageIds: imagesToDelete.map(img => Number(img.id))
         });
       } else {
         await onCreate({
@@ -276,7 +299,6 @@ export function ProductModal({
           </div>
         )}
 
-        {/* --- Upload Warning Banner --- */}
         {uploadWarning && (
           <div className="mx-5 mt-5 p-3 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-lg text-sm border border-yellow-200 dark:border-yellow-800">
             {uploadWarning}
@@ -344,6 +366,36 @@ export function ProductModal({
                 onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value, 10) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
               />
+            </div>
+
+            {/* --- Categories Selection --- */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categories</label>
+              {isLoadingCategories ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400">Loading categories...</div>
+              ) : categories.length === 0 ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400">No categories found.</div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat) => {
+                    const isSelected = selectedCategoryIds.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => toggleCategory(cat.id)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                          isSelected
+                            ? COLOR_PRESETS[cat.color]
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

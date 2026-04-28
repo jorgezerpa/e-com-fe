@@ -108,3 +108,14 @@ export type Order = {
   items: OrderItem[];
   orderEvents: OrderEvent[];
 };
+
+export type PaymentMethod = {
+    id?: number;
+    name: string;
+    description: string | null;
+    provider: string;
+    receiverFields: Record<string, string>; 
+    fields: Record<string, string>; 
+    askForPaymentProofImage: boolean; // Added this
+    companyId?: number;
+};

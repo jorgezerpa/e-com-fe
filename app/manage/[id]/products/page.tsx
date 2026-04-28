@@ -1,6 +1,5 @@
 'use client'
 // todo
-// - add categories assignation on product creation/deletion modal
 // - close modal when click save
 // - implement default payment methods cards and ui logic
 // - implement default shipment methods cards and ui logic

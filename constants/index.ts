@@ -639,3 +639,32 @@ export const COMMON_PAYMENT_METHODS_BANK_TRANSFER = [
     "askForPaymentProofImage": true
   }
 ]
+
+export const COMMON_SHIPPING_METHODS = [
+  {
+    "name": "MRW",
+    "description": "Envio gratis por MRW",
+    "provider": "MRW",
+    "fields": {
+      "Nombres del receptor": "",
+      "Apellidos del receptor": "",
+      "Cedula del receptor": "",
+      "Celular del receptor": "",
+      "Correo del receptor": "",
+      "código y/o direccion de agencia de destino": ""
+    },
+  },
+  {
+    "name": "Zoom",
+    "description": "Envio gratis por Zoom",
+    "provider": "MRW",
+    "fields": {
+      "Nombres del receptor": "",
+      "Apellidos del receptor": "",
+      "Cedula del receptor": "",
+      "Celular del receptor": "",
+      "Correo del receptor": "",
+      "código y/o direccion de agencia de destino": ""
+    },
+  }
+]

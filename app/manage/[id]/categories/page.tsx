@@ -29,6 +29,11 @@ export default function CategoriesManagement() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null)
 
+  // Delete Confirmation States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchCategories = async () => {
     setLoading(true); 
     setError(null);
@@ -62,13 +67,24 @@ export default function CategoriesManagement() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async(categoryId: string|number) => {
+  const handleDelete = (categoryId: string | number) => {
+    const category = categories.find((c) => c.id == categoryId);
+    if (!category) return;
+    setCategoryToDelete(category);
+    setIsDeleteModalOpen(true);
+  };
+  
+  const confirmDelete = async() => {
+    if (!categoryToDelete) return;
+    setIsDeleting(true);
     setLoading(true);
     setError(null);
     try {
       // @todo add a confirm modal first 
-      await deleteCategory(categoryId as number)
+      await deleteCategory(categoryToDelete.id as number)
       await fetchCategories()
+      setIsDeleteModalOpen(false);
+      setCategoryToDelete(null);
     } catch (error) {
       setError('Failed to delete product. Please try again.');
     }
@@ -182,11 +198,37 @@ export default function CategoriesManagement() {
         />
       )}
       {toast && <Toast message={toast?.message} type={toast?.type} onClose={()=>setToast(null)} /> }
+   
+      {/* --- Delete Confirmation Modal --- */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Borrar categoria</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              Are you sure you want to delete <strong>{categoryToDelete?.name}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)} 
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+   
+   
+   
     </div>
-
-
-
-
   );
 }
 

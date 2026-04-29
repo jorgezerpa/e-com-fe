@@ -50,6 +50,10 @@ export default function PaymentManagement() {
   const [activeCategory, setActiveCategory] = useState<'pagomovil' | 'banktransfer'>('pagomovil');
 
     const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null)
+  // Delete Confirmation States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [methodToDelete, setMethodToDelete] = useState<PaymentMethod | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // --- API Fetching ---
   const fetchMethods = async () => {
@@ -70,11 +74,21 @@ export default function PaymentManagement() {
   }, []);
 
   // --- Handlers ---
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this payment method?')) return;
+  const handleDelete = (methodId: string | number) => {
+    const method = methods.find((m) => m.id == methodId);
+    if (!method) return;
+    setMethodToDelete(method);
+    setIsDeleteModalOpen(true);
+  };
+  
+  const confirmDelete = async () => {
+    if (!methodToDelete) return;
+    setIsDeleting(true);
     try {
-      await deletePaymentMethod(id);
-      setMethods(prev => prev.filter(m => m.id !== id));
+      await deletePaymentMethod(methodToDelete.id as number);
+      await fetchMethods()
+      setIsDeleteModalOpen(false);
+      setMethodToDelete(null);
     } catch (error) {
       console.error("Delete failed", error);
       alert("Failed to delete payment method.");
@@ -423,6 +437,33 @@ export default function PaymentManagement() {
       )}
 
       {toast && <Toast message={toast?.message} type={toast?.type} onClose={()=>setToast(null)} /> }
+
+      {/* --- Delete Confirmation Modal --- */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Borrar Metodo</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              Are you sure you want to delete <strong>{methodToDelete?.name}</strong>? This will also remove all associated images. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)} 
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

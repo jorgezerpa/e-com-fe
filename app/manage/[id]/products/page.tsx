@@ -17,6 +17,7 @@ import { Product } from '@/types';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase'; 
+import { Toast } from '@/components/Toast';
 
 // --- Main Component ---
 export default function ProductManagement() {
@@ -44,6 +45,7 @@ export default function ProductManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null)
 
   // Simulated Fetch
   const fetchProducts = async () => {
@@ -164,6 +166,8 @@ export default function ProductManagement() {
     try {
       await updateProduct(productId as number, data)
       await fetchProducts()
+      setIsModalOpen(false);
+      setToast({ message:"Producto actualizado existosamente", type: "success" })
     } catch (error) {
         setError('Failed to update product. Please try again.');
     }
@@ -179,6 +183,8 @@ export default function ProductManagement() {
     try {
       await createProduct(data)
       await fetchProducts()
+      setIsModalOpen(false);
+      setToast({ message:"Producto creado existosamente", type: "success" })
     } catch (error) {
         setError('Failed to create product. Please try again.');
     }
@@ -310,6 +316,8 @@ export default function ProductManagement() {
           error={modalError}
         />
       )}
+
+      {toast && <Toast message={toast?.message} type={toast?.type} onClose={()=>setToast(null)} /> }
     </div>
   );
 }

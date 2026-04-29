@@ -12,6 +12,7 @@ import { Category, Color } from '@/types';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { COLOR_PRESETS } from '@/constants';
+import { Toast } from '@/components/Toast';
 
 // --- Main Component ---
 export default function CategoriesManagement() {
@@ -26,6 +27,7 @@ export default function CategoriesManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null)
 
   const fetchCategories = async () => {
     setLoading(true); 
@@ -82,6 +84,8 @@ export default function CategoriesManagement() {
     try {
       await updateCategory(categoryId as number, data)
       await fetchCategories()
+      setIsModalOpen(false)
+      setToast({ message:"Categoria actualizada existosamente", type: "success" })
     } catch (error) {
         setError('Failed to update category. Please try again.');
     }
@@ -97,6 +101,8 @@ export default function CategoriesManagement() {
     try {
       await createCategory(data)
       await fetchCategories()
+      setIsModalOpen(false)
+      setToast({ message:"Categoria creada existosamente", type: "success" })
     } catch (error) {
         setError('Failed to create category. Please try again.');
     }
@@ -175,6 +181,7 @@ export default function CategoriesManagement() {
           error={modalError}
         />
       )}
+      {toast && <Toast message={toast?.message} type={toast?.type} onClose={()=>setToast(null)} /> }
     </div>
 
 

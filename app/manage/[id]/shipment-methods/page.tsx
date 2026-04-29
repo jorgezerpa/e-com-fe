@@ -9,6 +9,7 @@ import {
 } from '@/apiHandlers/shippingMethods';
 import { useParams } from 'next/navigation';
 import { COMMON_SHIPPING_METHODS } from '@/constants';
+import { Toast } from '@/components/Toast';
 
 // --- Types ---
 export type ShippingMethod = {
@@ -40,6 +41,7 @@ export default function ShippingManagement() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', provider: '' });
   const [fields, setFields] = useState<DynamicField[]>([]);
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null)
 
   const fetchMethods = async () => {
     setIsLoading(true);
@@ -93,8 +95,9 @@ export default function ShippingManagement() {
       if (editingId) await updateShippingMethod(editingId, payload);
       else await createShippingMethod(payload);
       
+      await fetchMethods();
       setIsModalOpen(false);
-      fetchMethods();
+      setToast({ message:"Metodo " + (editingId ? "editado" : "creado") + " existosamente", type: "success" })
     } catch (err) {
       alert("Failed to save shipping method.");
     }
@@ -251,6 +254,9 @@ export default function ShippingManagement() {
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast?.message} type={toast?.type} onClose={()=>setToast(null)} /> }
+
     </div>
   );
 }

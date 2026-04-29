@@ -11,6 +11,7 @@ import {
 import { useParams } from 'next/navigation';
 import { PaymentMethod } from '@/types';
 import { COMMON_PAYMENT_METHODS_PAGO_MOVIL, COMMON_PAYMENT_METHODS_BANK_TRANSFER } from '@/constants';
+import { Toast } from '@/components/Toast';
 
 type DynamicField = { key: string; value: string };
 
@@ -47,6 +48,8 @@ export default function PaymentManagement() {
   // Selection Step State
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'pagomovil' | 'banktransfer'>('pagomovil');
+
+    const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null)
 
   // --- API Fetching ---
   const fetchMethods = async () => {
@@ -133,8 +136,10 @@ export default function PaymentManagement() {
     try {
       if (editingId) await updatePaymentMethod(editingId, payload);
       else await createPaymentMethod(payload);
+      await fetchMethods();
       setIsModalOpen(false);
-      fetchMethods();
+      setToast({ message:"Metodo " + (editingId ? "editado" : "creado") + " existosamente", type: "success" })
+
     } catch (error) {
       alert("Failed to save payment method.");
     }
@@ -416,6 +421,9 @@ export default function PaymentManagement() {
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast?.message} type={toast?.type} onClose={()=>setToast(null)} /> }
+
     </div>
   );
 }

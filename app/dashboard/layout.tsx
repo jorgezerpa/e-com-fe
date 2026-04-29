@@ -19,7 +19,7 @@ export default function AdminLayout({
 
 
   return (
-    <main className="flex-1 relative overflow-y-auto focus:outline-none scrollbar-hide">
+    <main className="flex-1 relative overflow-y-auto focus:outline-none scrollbar-hide bg-slate-50 dark:bg-[#0f1219]">
       <Navbar />
       <div className="">
         {children}
